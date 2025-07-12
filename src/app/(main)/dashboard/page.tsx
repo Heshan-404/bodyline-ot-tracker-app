@@ -36,7 +36,7 @@ export default function DashboardPage() {
   if (status === 'loading') {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <Spin size="large" tip="Loading dashboard..." />
+        <Spin size="large" />
       </div>
     );
   }

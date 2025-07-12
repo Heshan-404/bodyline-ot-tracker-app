@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../../lib/prisma';
 import { getServerSession, AuthOptions } from 'next-auth';
-import { authOptions } from '../../../../lib/auth';
+import { authOptions } from '@/src/lib/auth';
 
 export async function GET(
   req: NextRequest,
@@ -13,7 +13,8 @@ export async function GET(
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const awaitedParams = await params;
+  const { id } = awaitedParams;
 
   try {
     const receipt = await prisma.receipt.findUnique({

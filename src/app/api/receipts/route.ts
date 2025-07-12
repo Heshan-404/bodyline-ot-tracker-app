@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
-import { authOptions } from '../../../lib/auth';
-import { uploadImageToBlob } from '../../../lib/blob';
+import { authOptions } from '@/src/lib/auth';
+import { uploadImageToBlob } from '@/src/lib/blob';
 import { getServerSession, AuthOptions } from "next-auth";
 
 export async function GET(req: NextRequest) {
@@ -14,35 +14,69 @@ export async function GET(req: NextRequest) {
   const { role, id: userId } = session.user;
   const searchParams = req.nextUrl.searchParams;
   const statusFilter = searchParams.get('status');
+  const view = searchParams.get('view'); // New parameter
 
   let whereClause: any = {};
 
   if (statusFilter) {
     whereClause.status = statusFilter;
-  }
-
-  switch (role) {
-    case 'HR':
-      whereClause.writtenById = userId;
-      break;
-    case 'MGM':
-      whereClause.status = 'PENDING_MGM';
-      break;
-    case 'GM':
-      whereClause.status = 'APPROVED_BY_MGM_PENDING_GM';
-      break;
-    case 'SECURITY':
-      whereClause.OR = [
-        { status: 'REJECTED_BY_MGM' },
-        { status: 'REJECTED_BY_GM' },
-        { status: 'APPROVED_BY_MGM_PENDING_GM' },
-        { status: 'APPROVED_BY_GM_PENDING_SECURITY' },
-        { status: 'APPROVED_FINAL' },
-      ];
-      whereClause.NOT = { status: 'PENDING_MGM' };
-      break;
-    default:
-      return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+  } else if (view === 'history') {
+    switch (role) {
+      case 'MGM':
+        whereClause.OR = [
+          { status: 'APPROVED_BY_MGM_PENDING_GM', lastActionByRole: 'MGM' },
+          { status: 'REJECTED_BY_MGM', lastActionByRole: 'MGM' },
+          { status: 'APPROVED_FINAL', lastActionByRole: 'MGM' },
+        ];
+        break;
+      case 'GM':
+        whereClause.OR = [
+          { status: 'APPROVED_BY_GM_PENDING_SECURITY', lastActionByRole: 'GM' },
+          { status: 'REJECTED_BY_GM', lastActionByRole: 'GM' },
+          { status: 'APPROVED_FINAL', lastActionByRole: 'GM' },
+        ];
+        break;
+      case 'HR':
+        whereClause.writtenById = userId;
+        break;
+      case 'SECURITY':
+        whereClause.OR = [
+          { status: 'REJECTED_BY_MGM' },
+          { status: 'REJECTED_BY_GM' },
+          { status: 'APPROVED_BY_MGM_PENDING_GM' },
+          { status: 'APPROVED_BY_GM_PENDING_SECURITY' },
+          { status: 'APPROVED_FINAL' },
+        ];
+        whereClause.NOT = { status: 'PENDING_MGM' };
+        break;
+      default:
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
+  } else {
+    // Default dashboard view (pending receipts)
+    switch (role) {
+      case 'HR':
+        whereClause.writtenById = userId;
+        break;
+      case 'MGM':
+        whereClause.status = 'PENDING_MGM';
+        break;
+      case 'GM':
+        whereClause.status = 'APPROVED_BY_MGM_PENDING_GM';
+        break;
+      case 'SECURITY':
+        whereClause.OR = [
+          { status: 'REJECTED_BY_MGM' },
+          { status: 'REJECTED_BY_GM' },
+          { status: 'APPROVED_BY_MGM_PENDING_GM' },
+          { status: 'APPROVED_BY_GM_PENDING_SECURITY' },
+          { status: 'APPROVED_FINAL' },
+        ];
+        whereClause.NOT = { status: 'PENDING_MGM' };
+        break;
+      default:
+        return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+    }
   }
 
   try {
@@ -66,7 +100,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest, res: NextResponse) {
-  const session = await getServerSession(req, res, authOptions as AuthOptions);
+  const session = await getServerSession(authOptions as AuthOptions);
 
   if (!session || session.user.role !== 'HR') {
     console.log('Unauthorized access attempt: Session:', session, 'User Role:', session?.user?.role);
@@ -86,6 +120,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
       );
     }
 
+    console.log('Checking session.user.id:', session?.user?.id);
     if (!session.user || !session.user.id) {
       return NextResponse.json({ message: 'User not authenticated' }, { status: 401 });
     }

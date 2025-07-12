@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, Descriptions, Image, Spin, Typography, message, Tag } from 'antd';
+import { useState, useEffect } from 'react';
+import { Card, Descriptions, Image, Spin, Typography, notification, Tag, Button, Modal, Form, Input } from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
@@ -10,7 +11,6 @@ const { Title } = Typography;
 interface Receipt {
   id: string;
   title: string;
-  amount: number;
   description?: string;
   imageUrl: string;
   createdAt: string;
@@ -28,6 +28,9 @@ export default function ReceiptDetailPage() {
   const { data: session, status } = useSession();
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [loading, setLoading] = useState(true);
+  const [api, contextHolder] = notification.useNotification();
+  const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
+  const [rejectionForm] = Form.useForm();
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -48,17 +51,91 @@ export default function ReceiptDetailPage() {
       const data = await res.json();
       setReceipt(data);
     } catch (error: any) {
-      message.error(error.message);
+      api.error({
+        message: 'Error fetching receipt',
+        description: error.message,
+      });
       router.push('/dashboard'); // Redirect to dashboard on error
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAction = async (action: 'approve' | 'reject', reason?: string) => {
+    if (!session?.user?.role) {
+      api.error({ message: 'Unauthorized', description: 'User role not found.' });
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/receipts/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, rejectionReason: reason }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Failed to ${action} receipt`);
+      }
+
+      api.success({
+        message: 'Success',
+        description: `Receipt ${action}d successfully!`,
+      });
+      fetchReceiptDetails(); // Re-fetch to update status
+    } catch (error: any) {
+      api.error({
+        message: 'Action Failed',
+        description: error.message,
+      });
+    }
+  };
+
+  const showRejectModal = () => {
+    setIsRejectModalVisible(true);
+  };
+
+  const handleRejectModalOk = async () => {
+    try {
+      const values = await rejectionForm.validateFields();
+      await handleAction('reject', values.rejectionReason);
+      setIsRejectModalVisible(false);
+      rejectionForm.resetFields();
+    } catch (errorInfo) {
+      console.log('Validation Failed:', errorInfo);
+    }
+  };
+
+  const handleRejectModalCancel = () => {
+    setIsRejectModalVisible(false);
+    rejectionForm.resetFields();
+  };
+
+  const canApproveOrReject = () => {
+    if (!session?.user?.role || !receipt) return false;
+
+    const { role } = session.user;
+    const { status: receiptStatus } = receipt;
+
+    switch (role) {
+      case 'MGM':
+        return receiptStatus === 'PENDING_MGM';
+      case 'GM':
+        return receiptStatus === 'APPROVED_BY_MGM_PENDING_GM';
+      case 'SECURITY':
+        return receiptStatus === 'APPROVED_BY_GM_PENDING_SECURITY';
+      default:
+        return false;
+    }
+  };
+
   if (loading || status === 'loading') {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-        <Spin size="large" tip="Loading receipt details..." />
+        <Spin size="large" />
       </div>
     );
   }
@@ -74,11 +151,19 @@ export default function ReceiptDetailPage() {
 
   return (
     <div style={{ padding: '24px' }}>
+      {contextHolder}
+      <Button
+        type="text"
+        icon={<ArrowLeftOutlined />}
+        onClick={() => router.back()}
+        style={{ marginBottom: '16px' }}
+      >
+        Back
+      </Button>
       <Card>
         <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Receipt Details</Title>
         <Descriptions bordered column={1}>
           <Descriptions.Item label="Title">{receipt.title}</Descriptions.Item>
-          <Descriptions.Item label="Amount">${receipt.amount.toFixed(2)}</Descriptions.Item>
           <Descriptions.Item label="Status">
             <Tag color="blue">{receipt.status.replace(/_/g, ' ')}</Tag>
           </Descriptions.Item>
@@ -109,7 +194,39 @@ export default function ReceiptDetailPage() {
             />
           </Descriptions.Item>
         </Descriptions>
+        {canApproveOrReject() && (
+          <div style={{ marginTop: '24px', textAlign: 'right' }}>
+            <Button
+              type="primary"
+              onClick={() => handleAction('approve')}
+              style={{ marginRight: '8px' }}
+            >
+              Approve
+            </Button>
+            <Button type="default" danger onClick={showRejectModal}>
+              Reject
+            </Button>
+          </div>
+        )}
       </Card>
+
+      <Modal
+        title="Reject Receipt"
+        open={isRejectModalVisible}
+        onOk={handleRejectModalOk}
+        onCancel={handleRejectModalCancel}
+        confirmLoading={loading}
+      >
+        <Form form={rejectionForm} layout="vertical">
+          <Form.Item
+            name="rejectionReason"
+            label="Reason for Rejection"
+            rules={[{ required: true, message: 'Please provide a reason for rejection' }]}
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
