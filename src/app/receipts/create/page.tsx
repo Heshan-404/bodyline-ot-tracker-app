@@ -1,0 +1,119 @@
+'use client';
+
+import { useState } from 'react';
+import { Form, Input, InputNumber, Button, Upload, message, Card, Typography } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+
+const { Title } = Typography;
+
+export default function CreateReceiptPage() {
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [fileList, setFileList] = useState<any[]>([]);
+  const router = useRouter();
+  const { data: session, status } = useSession();
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (status === 'unauthenticated' || session?.user?.role !== 'HR') {
+    router.push('/login');
+    return null;
+  }
+
+  const onFinish = async (values: any) => {
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', values.title);
+      formData.append('description', values.description || '');
+      if (fileList.length > 0) {
+        formData.append('image', fileList[0].originFileObj as File);
+      }
+
+      const res = await fetch('/api/receipts', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to create receipt');
+      }
+
+      message.success('Receipt created successfully!');
+      form.resetFields();
+      setFileList([]);
+      router.push('/dashboard/hr');
+    } catch (error: any) {
+      message.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileChange = ({ fileList: newFileList }: any) => {
+    setFileList(newFileList);
+  };
+
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+      <Card style={{ width: 600 }}>
+        <Title level={2} style={{ textAlign: 'center' }}>Create New Receipt</Title>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
+        >
+          <Form.Item
+            label="Title"
+            name="title"
+            rules={[{ required: true, message: 'Please input the title!' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          
+
+          <Form.Item
+            label="Description"
+            name="description"
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+
+          <Form.Item
+            label="Receipt Image"
+            name="image"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => e && e.fileList}
+            rules={[{ required: true, message: 'Please upload a receipt image!' }]}
+          >
+            <Upload
+              listType="picture"
+              maxCount={1}
+              beforeUpload={() => false} // Prevent Ant Design from uploading automatically
+              fileList={form.getFieldValue('image')}
+              onChange={(info) => {
+                form.setFieldsValue({ image: info.fileList });
+                setFileList(info.fileList); // Keep this for displaying the file in the Upload component
+              }}
+            >
+              <Button icon={<UploadOutlined />}>Upload Image</Button>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} block>
+              Submit Receipt
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
+    </div>
+  );
+}

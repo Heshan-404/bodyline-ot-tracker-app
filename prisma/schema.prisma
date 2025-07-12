@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  role         UserRole
+  receipts     Receipt[] @relation("WrittenBy")
+}
+
+model Receipt {
+  id                  String        @id @default(cuid())
+  title               String
+  description         String?
+  imageUrl            String        @db.VarChar(2048)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  status              ReceiptStatus
+  writtenById         String
+  currentApproverRole UserRole?
+  lastActionByRole    UserRole?
+  rejectionReason     String?
+  writtenBy           User          @relation("WrittenBy", fields: [writtenById], references: [id])
+}
+
+enum UserRole {
+  HR
+  MGM
+  GM
+  SECURITY
+}
+
+enum ReceiptStatus {
+  PENDING_MGM
+  APPROVED_BY_MGM_PENDING_GM
+  APPROVED_BY_GM_PENDING_SECURITY
+  APPROVED_FINAL
+  REJECTED_BY_MGM
+  REJECTED_BY_GM
+}

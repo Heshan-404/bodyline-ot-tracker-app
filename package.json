@@ -6,19 +6,27 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@ant-design/nextjs-registry": "^1.0.2",
+    "@prisma/client": "^6.11.1",
+    "@vercel/blob": "^1.1.1",
+    "antd": "^5.26.4",
+    "bcryptjs": "^3.0.2",
+    "next": "15.3.5",
+    "next-auth": "^4.24.11",
+    "prisma": "^6.11.1",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "next": "15.3.5"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
