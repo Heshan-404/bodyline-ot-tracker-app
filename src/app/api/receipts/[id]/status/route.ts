@@ -15,7 +15,7 @@ export async function PUT(
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id: receiptId } = params;
+  const { id: receiptId } = params.params;
   const { action, rejectionReason } = await req.json();
   const userRole = session.user.role;
     const userName = session.user.name; // Use session.user.name as username is not available

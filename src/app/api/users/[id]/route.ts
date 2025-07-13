@@ -15,7 +15,7 @@ export async function PUT(
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = params.params;
   const { username, email, role } = await req.json();
 
   // HR can update any user's email. Only HR and Security can update roles.
@@ -92,7 +92,7 @@ export async function DELETE(
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = await params;
+  const { id } = params.params;
 
   // Prevent a user from deleting themselves
   if (session.user.id === id) {

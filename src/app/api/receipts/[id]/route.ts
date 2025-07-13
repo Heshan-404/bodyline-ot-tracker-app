@@ -15,7 +15,8 @@ export async function GET(
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const id = params.params.id as string;
+  console.log('Received params in GET /api/receipts/[id]:', params);
 
   try {
     const receipt = await prisma.receipt.findUnique({
@@ -62,7 +63,7 @@ export async function DELETE(
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const id = params.params.id as string;
   const userId = session.user.id;
 
   try {

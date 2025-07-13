@@ -15,7 +15,7 @@ export async function PUT(
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params as { id: string };
+  const { id } = params.params as { id: string };
   const { role: userRole, name: userName } = session.user;
 
   try {
