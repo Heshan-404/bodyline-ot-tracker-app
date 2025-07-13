@@ -10,6 +10,7 @@ datasource db {
 model User {
   id           String    @id @default(cuid())
   username     String    @unique
+  email        String    @unique
   passwordHash String
   role         UserRole
   receipts     Receipt[] @relation("WrittenBy")
@@ -27,21 +28,23 @@ model Receipt {
   currentApproverRole UserRole?
   lastActionByRole    UserRole?
   rejectionReason     String?
+  dgmActionBy         String?
+  gmActionBy          String?
+  securityActionBy    String?
   writtenBy           User          @relation("WrittenBy", fields: [writtenById], references: [id])
 }
 
 enum UserRole {
   HR
-  MGM
+  DGM
   GM
   SECURITY
 }
 
 enum ReceiptStatus {
-  PENDING_MGM
-  APPROVED_BY_MGM_PENDING_GM
-  APPROVED_BY_GM_PENDING_SECURITY
+  PENDING_DGM
+  APPROVED_BY_DGM_PENDING_GM
   APPROVED_FINAL
-  REJECTED_BY_MGM
+  REJECTED_BY_DGM
   REJECTED_BY_GM
 }

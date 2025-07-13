@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Table, Tag, notification, Spin, Typography } from 'antd';
+import { Table, Tag, notification, Spin, Typography, Button, Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import Link from 'next/link';
+
+import { useRouter } from 'next/navigation';
+
+import { EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import Link from "next/link";
 
 const { Title } = Typography;
 
@@ -20,51 +24,117 @@ interface Receipt {
   currentApproverRole?: string | null;
   lastActionByRole?: string | null;
   rejectionReason?: string | null;
+  dgmActionBy?: string | null;
+  gmActionBy?: string | null;
 }
-
-const columns: ColumnsType<Receipt> = [
-  {
-    title: 'Title',
-    dataIndex: 'title',
-    key: 'title',
-    render: (text, record) => <Link href={`/receipts/${record.id}`}>{text}</Link>,
-  },
-  {
-    title: 'Status',
-    dataIndex: 'status',
-    key: 'status',
-    render: (status: string) => {
-      let color = 'geekblue';
-      if (status.includes('REJECTED')) {
-        color = 'volcano';
-      } else if (status.includes('APPROVED')) {
-        color = 'green';
-      }
-      return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
-    },
-  },
-  {
-    title: 'Written By',
-    dataIndex: ['writtenBy', 'username'],
-    key: 'writtenBy',
-  },
-  {
-    title: 'Created At',
-    dataIndex: 'createdAt',
-    key: 'createdAt',
-    render: (date: string) => new Date(date).toLocaleString(),
-  },
-];
 
 export default function HRDashboardPage() {
   const { data: session, status } = useSession();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   const [api, contextHolder] = notification.useNotification();
+  const router = useRouter();
+  const [pageSize, setPageSize] = useState(10);
+
+  const useWindowSize = () => {
+    const [size, setSize] = useState([0, 0]);
+    useEffect(() => {
+      function updateSize() {
+        setSize([window.innerWidth, window.innerHeight]);
+      }
+      window.addEventListener('resize', updateSize);
+      updateSize();
+      return () => window.removeEventListener('resize', updateSize);
+    }, []);
+    return size;
+  };
+
+  const [width, height] = useWindowSize();
+
+  useEffect(() => {
+    if (height) {
+      const newPageSize = Math.floor((height - 400) / 50);
+      setPageSize(newPageSize > 0 ? newPageSize : 1);
+    }
+  }, [height]);
+
+  const [users, setUsers] = useState<{ id: string; username: string; role: string }[]>([]);
+
+  const columns: ColumnsType<Receipt> = [
+    {
+      title: 'Title',
+      dataIndex: 'title',
+      key: 'title',
+      render: (text, record) => <Link href={`/receipts/${record.id}`}>{text}</Link>,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        let color = 'geekblue';
+        if (status.includes('REJECTED')) {
+          color = 'volcano';
+        } else if (status.includes('APPROVED')) {
+          color = 'green';
+        }
+        return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
+      },
+      filters: [
+        { text: 'Pending DGM', value: 'PENDING_DGM' },
+        { text: 'Rejected by DGM', value: 'REJECTED_BY_DGM' },
+        { text: 'Approved by DGM', value: 'APPROVED_BY_DGM_PENDING_GM' },
+        { text: 'Rejected by GM', value: 'REJECTED_BY_GM' },
+        { text: 'Approved Final', value: 'APPROVED_FINAL' },
+      ],
+      onFilter: (value, record) => record.status.indexOf(value as string) === 0,
+    },
+    {
+      title: 'Written By',
+      dataIndex: ['writtenBy', 'username'],
+      key: 'writtenBy',
+      filters: users.filter(user => user.role === 'HR').map((user) => ({ text: user.username, value: user.username })),
+      onFilter: (value, record) => record.writtenBy.username.indexOf(value as string) === 0,
+    },
+    {
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date: string) => new Date(date).toLocaleString(),
+      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    },
+    {
+      title: 'DGM Action By',
+      dataIndex: 'dgmActionBy',
+      key: 'dgmActionBy',
+    },
+    {
+      title: 'GM Action By',
+      dataIndex: 'gmActionBy',
+      key: 'gmActionBy',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (text, record) => (
+        <Space size="middle">
+          <Link href={`/receipts/${record.id}`} passHref>
+            <Button icon={<EyeOutlined />} />
+          </Link>
+          <Button
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id)}
+            disabled={record.status !== 'PENDING_DGM'} // Changed from PENDING_MGM
+          />
+        </Space>
+      ),
+    },
+  ];
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'HR') {
       fetchReceipts();
+      fetchUsers();
     } else if (status === 'unauthenticated') {
       api.error({
         message: 'Authorization Error',
@@ -72,6 +142,45 @@ export default function HRDashboardPage() {
       });
     }
   }, [session, status, api]);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/users');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to fetch users');
+      }
+      const data = await res.json();
+      setUsers(data);
+    } catch (error: any) {
+      api.error({
+        message: 'Error fetching users',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/receipts/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete receipt');
+      }
+      api.success({
+        message: 'Receipt deleted',
+        description: 'The receipt has been successfully deleted.',
+      });
+      fetchReceipts();
+    } catch (error: any) {
+      api.error({
+        message: 'Error deleting receipt',
+        description: error.message,
+      });
+    }
+  };
 
   const fetchReceipts = async () => {
     try {
@@ -101,20 +210,16 @@ export default function HRDashboardPage() {
     );
   }
 
-  if (session?.user?.role !== 'HR') {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Title level={3}>Access Denied</Title>
-        <p>You do not have permission to view this dashboard.</p>
-      </div>
-    );
+  if (status === 'authenticated' && session?.user?.role !== 'HR') {
+    router.push(`/dashboard/${session.user.role.toLowerCase()}`);
+    return null;
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="hr-dashboard-container" style={{ padding: '24px' }}>
       {contextHolder}
       <Title level={2}>HR Dashboard - All Receipts</Title>
-      <Table columns={columns} dataSource={receipts} rowKey="id" />
+      <Table columns={columns} dataSource={receipts} rowKey="id" pagination={{ pageSize }} scroll={{ x: 'max-content' }} />
     </div>
   );
 }

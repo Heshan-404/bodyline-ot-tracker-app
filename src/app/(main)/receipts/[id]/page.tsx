@@ -20,6 +20,8 @@ interface Receipt {
   currentApproverRole?: string | null;
   lastActionByRole?: string | null;
   rejectionReason?: string | null;
+  dgmActionBy?: string | null;
+  gmActionBy?: string | null;
 }
 
 export default function ReceiptDetailPage() {
@@ -28,6 +30,7 @@ export default function ReceiptDetailPage() {
   const { data: session, status } = useSession();
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [api, contextHolder] = notification.useNotification();
   const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
   const [rejectionForm] = Form.useForm();
@@ -66,6 +69,7 @@ export default function ReceiptDetailPage() {
       api.error({ message: 'Unauthorized', description: 'User role not found.' });
       return;
     }
+    setIsSubmitting(true);
 
     try {
       const res = await fetch(`/api/receipts/${id}/status`, {
@@ -91,6 +95,8 @@ export default function ReceiptDetailPage() {
         message: 'Action Failed',
         description: error.message,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -121,10 +127,10 @@ export default function ReceiptDetailPage() {
     const { status: receiptStatus } = receipt;
 
     switch (role) {
-      case 'MGM':
-        return receiptStatus === 'PENDING_MGM';
+      case 'DGM':
+        return receiptStatus === 'PENDING_DGM';
       case 'GM':
-        return receiptStatus === 'APPROVED_BY_MGM_PENDING_GM';
+        return receiptStatus === 'APPROVED_BY_DGM_PENDING_GM';
       case 'SECURITY':
         return receiptStatus === 'APPROVED_BY_GM_PENDING_SECURITY';
       default:
@@ -150,7 +156,7 @@ export default function ReceiptDetailPage() {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="receipt-detail-container">
       {contextHolder}
       <Button
         type="text"
@@ -160,7 +166,7 @@ export default function ReceiptDetailPage() {
       >
         Back
       </Button>
-      <Card>
+      <Card className="receipt-detail-card">
         <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Receipt Details</Title>
         <Descriptions bordered column={1}>
           <Descriptions.Item label="Title">{receipt.title}</Descriptions.Item>
@@ -186,6 +192,12 @@ export default function ReceiptDetailPage() {
           {receipt.rejectionReason && (
             <Descriptions.Item label="Rejection Reason">{receipt.rejectionReason}</Descriptions.Item>
           )}
+          {receipt.dgmActionBy && (
+            <Descriptions.Item label="DGM Action By">{receipt.dgmActionBy}</Descriptions.Item>
+          )}
+          {receipt.gmActionBy && (
+            <Descriptions.Item label="GM Action By">{receipt.gmActionBy}</Descriptions.Item>
+          )}
           <Descriptions.Item label="Image">
             <Image
               src={receipt.imageUrl}
@@ -195,15 +207,16 @@ export default function ReceiptDetailPage() {
           </Descriptions.Item>
         </Descriptions>
         {canApproveOrReject() && (
-          <div style={{ marginTop: '24px', textAlign: 'right' }}>
+          <div className="receipt-actions" style={{ marginTop: '24px', textAlign: 'right' }}>
             <Button
               type="primary"
               onClick={() => handleAction('approve')}
               style={{ marginRight: '8px' }}
+              loading={isSubmitting}
             >
               Approve
             </Button>
-            <Button type="default" danger onClick={showRejectModal}>
+            <Button type="default" danger onClick={showRejectModal} loading={isSubmitting}>
               Reject
             </Button>
           </div>
@@ -215,7 +228,7 @@ export default function ReceiptDetailPage() {
         open={isRejectModalVisible}
         onOk={handleRejectModalOk}
         onCancel={handleRejectModalCancel}
-        confirmLoading={loading}
+        confirmLoading={isSubmitting}
       >
         <Form form={rejectionForm} layout="vertical">
           <Form.Item

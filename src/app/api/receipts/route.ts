@@ -3,6 +3,8 @@ import prisma from '../../../lib/prisma';
 import { authOptions } from '@/src/lib/auth';
 import { uploadImageToBlob } from '@/src/lib/blob';
 import { getServerSession, AuthOptions } from "next-auth";
+import { sendEmail } from '@/src/lib/email';
+import { newReceiptTemplate } from '@/src/lib/emailTemplates/newReceipt';
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions as AuthOptions);
@@ -18,67 +20,47 @@ export async function GET(req: NextRequest) {
 
   let whereClause: any = {};
 
-  if (statusFilter) {
-    whereClause.status = statusFilter;
-  } else if (view === 'history') {
-    switch (role) {
-      case 'MGM':
-        whereClause.OR = [
-          { status: 'APPROVED_BY_MGM_PENDING_GM', lastActionByRole: 'MGM' },
-          { status: 'REJECTED_BY_MGM', lastActionByRole: 'MGM' },
-          { status: 'APPROVED_FINAL', lastActionByRole: 'MGM' },
-        ];
-        break;
-      case 'GM':
-        whereClause.OR = [
-          { status: 'APPROVED_BY_GM_PENDING_SECURITY', lastActionByRole: 'GM' },
-          { status: 'REJECTED_BY_GM', lastActionByRole: 'GM' },
-          { status: 'APPROVED_FINAL', lastActionByRole: 'GM' },
-        ];
-        break;
-      case 'HR':
-        whereClause.writtenById = userId;
-        break;
-      case 'SECURITY':
-        whereClause.OR = [
-          { status: 'REJECTED_BY_MGM' },
-          { status: 'REJECTED_BY_GM' },
-          { status: 'APPROVED_BY_MGM_PENDING_GM' },
-          { status: 'APPROVED_BY_GM_PENDING_SECURITY' },
-          { status: 'APPROVED_FINAL' },
-        ];
-        whereClause.NOT = { status: 'PENDING_MGM' };
-        break;
-      default:
-        return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+  if (view === 'history') {
+    if (statusFilter) {
+      whereClause.status = statusFilter;
+    } else {
+      switch (role) {
+        case 'DGM':
+          whereClause.status = { in: ['REJECTED_BY_DGM', 'APPROVED_BY_DGM_PENDING_GM', 'APPROVED_FINAL'] };
+          break;
+        case 'GM':
+          whereClause.status = { in: ['REJECTED_BY_GM', 'APPROVED_FINAL'] };
+          break;
+        case 'HR':
+          whereClause.writtenById = userId;
+          break;
+        case 'SECURITY':
+          // Security can view all receipts
+          break;
+        default:
+          return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
+      }
     }
+  } else if (statusFilter) {
+    whereClause.status = statusFilter;
   } else {
     // Default dashboard view (pending receipts)
     switch (role) {
       case 'HR':
         whereClause.writtenById = userId;
         break;
-      case 'MGM':
-        whereClause.status = 'PENDING_MGM';
+      case 'DGM':
+        whereClause.status = 'PENDING_DGM';
         break;
       case 'GM':
-        whereClause.status = 'APPROVED_BY_MGM_PENDING_GM';
-        break;
-      case 'SECURITY':
-        whereClause.OR = [
-          { status: 'REJECTED_BY_MGM' },
-          { status: 'REJECTED_BY_GM' },
-          { status: 'APPROVED_BY_MGM_PENDING_GM' },
-          { status: 'APPROVED_BY_GM_PENDING_SECURITY' },
-          { status: 'APPROVED_FINAL' },
-        ];
-        whereClause.NOT = { status: 'PENDING_MGM' };
+        whereClause.status = 'APPROVED_BY_DGM_PENDING_GM';
         break;
       default:
         return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
   }
 
+  console.log(`Fetching receipts for role: ${role}, view: ${view}, whereClause:`, whereClause);
   try {
     const receipts = await prisma.receipt.findMany({
       where: whereClause,
@@ -89,6 +71,7 @@ export async function GET(req: NextRequest) {
         createdAt: 'desc',
       },
     });
+    console.log('Receipts fetched for history:', receipts);
     return NextResponse.json(receipts);
   } catch (error) {
     console.error('Error fetching receipts:', error);
@@ -99,7 +82,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest, res: NextResponse) {
+export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions as AuthOptions);
 
   if (!session || session.user.role !== 'HR') {
@@ -133,10 +116,31 @@ export async function POST(req: NextRequest, res: NextResponse) {
         description,
         imageUrl,
         writtenById: session.user.id,
-        status: 'PENDING_MGM',
-        currentApproverRole: 'MGM',
+        status: 'PENDING_DGM',
+        currentApproverRole: 'DGM',
       },
     });
+
+    // Send email to all DGMs
+    const dgmUsers = await prisma.user.findMany({
+      where: { role: 'DGM' },
+      select: { email: true },
+    });
+    const dgmEmails = dgmUsers.map((user) => user.email);
+
+    if (dgmEmails.length > 0) {
+      const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${newReceipt.id}`;
+      const emailHtml = newReceiptTemplate({
+        title: newReceipt.title,
+        description: newReceipt.description || '',
+        receiptLink,
+      });
+      await sendEmail({
+        to: dgmEmails,
+        subject: `New Receipt for Your Approval: ${newReceipt.title}`,
+        html: emailHtml,
+      });
+    }
 
     return NextResponse.json(newReceipt, { status: 201 });
   } catch (error) {

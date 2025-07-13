@@ -1,47 +1,75 @@
-import { NextRequest, NextResponse } from 'next/server';
+
+import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
-import { getServerSession, AuthOptions } from "next-auth";
-import { authOptions } from '@/src/lib/auth';
 
-export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions as AuthOptions);
-
-  if (!session || session.user.role !== 'HR') {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function GET(req: Request) {
   try {
-    const { username, password, role } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const roleFilter = searchParams.get('role');
 
-    if (!username || !password || !role) {
+    const users = await prisma.user.findMany({
+      where: roleFilter ? { role: roleFilter } : {},
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+      },
+    });
+    return NextResponse.json(users);
+  } catch (error) {
+    return NextResponse.json(
+      { message: 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const { username, password, role, email } = await request.json();
+
+    if (!username || !password || !role || !email) {
       return NextResponse.json(
-        { message: 'Missing required fields' },
+        { message: 'Username, password, role, and email are required' },
         { status: 400 }
       );
     }
 
-    const existingUser = await prisma.user.findUnique({
-      where: { username },
-    });
-
+    const existingUser = await prisma.user.findUnique({ where: { username } });
     if (existingUser) {
-      return NextResponse.json({ message: 'User already exists' }, { status: 409 });
+      return NextResponse.json(
+        { message: 'User with this username already exists' },
+        { status: 409 }
+      );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
+      return NextResponse.json(
+        { message: 'User with this email already exists' },
+        { status: 409 }
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const newUser = await prisma.user.create({
       data: {
         username,
-        passwordHash: hashedPassword,
+        email,
+        passwordHash,
         role,
       },
     });
 
-    return NextResponse.json(newUser, { status: 201 });
+    return NextResponse.json(
+      { message: 'User registered successfully', user: newUser },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error('Error registering user:', error);
+    console.error('Registration error:', error);
     return NextResponse.json(
       { message: 'Internal Server Error' },
       { status: 500 }

@@ -13,37 +13,57 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    const { username, password } = await req.json();
+    const { email, password, currentPassword } = await req.json();
     const userId = session.user.id;
 
-    if (!username && !password) {
-      return NextResponse.json(
-        { message: 'No fields to update' },
-        { status: 400 }
-      );
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    const updateData: { username?: string; passwordHash?: string } = {};
+    // Check if any sensitive fields are being updated (password or email)
+    const isPasswordChange = !!password;
+    const isEmailChange = email && email !== user.email;
 
-    if (username) {
-      const existingUser = await prisma.user.findUnique({
-        where: { username },
+    if (isPasswordChange || isEmailChange) {
+      if (!currentPassword) {
+        return NextResponse.json({ message: 'Current password is required to change email or password' }, { status: 400 });
+      }
+
+      const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isCurrentPasswordValid) {
+        return NextResponse.json({ message: 'Invalid current password' }, { status: 401 });
+      }
+    }
+
+    const updateData: { email?: string; passwordHash?: string } = {};
+
+    if (isEmailChange) {
+      const existingUserWithEmail = await prisma.user.findUnique({
+        where: { email },
       });
 
-      if (existingUser && existingUser.id !== userId) {
-        return NextResponse.json({ message: 'Username already taken' }, { status: 409 });
+      if (existingUserWithEmail && existingUserWithEmail.id !== userId) {
+        return NextResponse.json({ message: 'Email already taken' }, { status: 409 });
       }
-      updateData.username = username;
+      updateData.email = email;
     }
 
-    if (password) {
+    if (isPasswordChange) {
       updateData.passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    if (!isEmailChange && !isPasswordChange) {
+      return NextResponse.json({ message: 'No fields to update' }, { status: 400 });
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: updateData,
-      select: { id: true, username: true, role: true }, // Select fields to return, exclude passwordHash
+      select: { id: true, username: true, email: true, role: true },
     });
 
     revalidatePath('/profile');

@@ -13,7 +13,7 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
-          return null;
+          throw new Error("Please enter both username and password.");
         }
 
         const user = await prisma.user.findUnique({
@@ -21,7 +21,7 @@ export const authOptions: AuthOptions = {
         });
 
         if (!user) {
-          return null;
+          throw new Error("Invalid username or password.");
         }
 
         const isValid = await bcrypt.compare(
@@ -30,7 +30,7 @@ export const authOptions: AuthOptions = {
         );
 
         if (!isValid) {
-          return null;
+          throw new Error("Invalid username or password.");
         }
 
         return {
@@ -46,6 +46,7 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        token.name = user.name;
       }
       return token;
     },
@@ -55,6 +56,9 @@ export const authOptions: AuthOptions = {
       }
       if (token.id) {
         session.user.id = token.id as string;
+      }
+      if (token.name) {
+        session.user.name = token.name;
       }
       return session;
     },

@@ -3,10 +3,11 @@ import prisma from '../../../../../lib/prisma';
 import { getServerSession, AuthOptions } from "next-auth";
 import { authOptions } from '@/src/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { sendEmail } from '@/src/lib/email';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  params: any
 ) {
   const session = await getServerSession(authOptions as AuthOptions);
 
@@ -14,10 +15,10 @@ export async function PUT(
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const awaitedParams = await params;
-  const { id: receiptId } = awaitedParams;
+  const { id: receiptId } = params;
   const { action, rejectionReason } = await req.json();
   const userRole = session.user.role;
+    const userName = session.user.name; // Use session.user.name as username is not available
 
   try {
     const receipt = await prisma.receipt.findUnique({
@@ -48,17 +49,58 @@ export async function PUT(
           return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
         }
         break;
+      case 'DGM':
+        if (receipt.status !== 'PENDING_DGM') {
+          return NextResponse.json({ message: 'Invalid status for DGM action' }, { status: 400 });
+        }
+        if (action === 'approve') {
+          newStatus = 'APPROVED_BY_DGM_PENDING_GM';
+          newCurrentApproverRole = 'GM';
+          updateData.dgmActionBy = userName;
+          // Notify all DGMs
+          const dgmUsers = await prisma.user.findMany({
+            where: { role: 'DGM' },
+            select: { email: true },
+          });
+          const dgmEmails = dgmUsers.map((user) => user.email);
+
+          if (dgmEmails.length > 0) {
+            const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${receipt.id}`;
+            const emailHtml = `
+              <p>Dear DGM,</p>
+              <p>A receipt titled "<strong>${receipt.title}</strong>" has been approved by a DGM.</p>
+              <p>Description: ${receipt.description || 'N/A'}</p>
+              <p>You can view the details here: <a href="${receiptLink}">${receiptLink}</a></p>
+              <p>Thank you.</p>
+            `;
+            await sendEmail({
+              to: dgmEmails,
+              subject: `Receipt Approved by DGM: ${receipt.title}`,
+              html: emailHtml,
+            });
+          }
+        } else if (action === 'reject') {
+          newStatus = 'REJECTED_BY_DGM';
+          newCurrentApproverRole = null;
+          updateData.rejectionReason = rejectionReason || 'Rejected by DGM';
+          updateData.dgmActionBy = userName;
+        } else {
+          return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
+        }
+        break;
       case 'GM':
-        if (receipt.status !== 'APPROVED_BY_MGM_PENDING_GM') {
+        if (receipt.status !== 'APPROVED_BY_DGM_PENDING_GM') {
           return NextResponse.json({ message: 'Invalid status for GM action' }, { status: 400 });
         }
         if (action === 'approve') {
-          newStatus = 'APPROVED_BY_GM_PENDING_SECURITY';
-          newCurrentApproverRole = 'SECURITY';
+          newStatus = 'APPROVED_FINAL';
+          newCurrentApproverRole = null;
+          updateData.gmActionBy = userName;
         } else if (action === 'reject') {
           newStatus = 'REJECTED_BY_GM';
           newCurrentApproverRole = null;
           updateData.rejectionReason = rejectionReason || 'Rejected by GM';
+          updateData.gmActionBy = userName;
         } else {
           return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
         }

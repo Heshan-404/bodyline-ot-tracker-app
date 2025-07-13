@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Form, Input, InputNumber, Button, Upload, message, Card, Typography } from 'antd';
+import { Form, Input, Button, Upload, notification, Card, Typography, Image } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -12,6 +12,7 @@ export default function CreateReceiptPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [fileList, setFileList] = useState<any[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -44,12 +45,18 @@ export default function CreateReceiptPage() {
         throw new Error(errorData.message || 'Failed to create receipt');
       }
 
-      message.success('Receipt created successfully!');
+      notification.success({
+        message: 'Receipt created successfully!',
+        description: 'Your receipt has been submitted.',
+      });
       form.resetFields();
       setFileList([]);
       router.push('/dashboard/hr');
     } catch (error: any) {
-      message.error(error.message);
+      notification.error({
+        message: 'Error creating receipt',
+        description: error.message,
+      });
     } finally {
       setLoading(false);
     }
@@ -57,11 +64,20 @@ export default function CreateReceiptPage() {
 
   const handleFileChange = ({ fileList: newFileList }: any) => {
     setFileList(newFileList);
+    if (newFileList.length > 0 && newFileList[0].originFileObj) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(newFileList[0].originFileObj);
+    } else {
+      setPreviewImage(null);
+    }
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      <Card style={{ width: 600 }}>
+    <div className="create-receipt-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+      <Card className="create-receipt-card" style={{ width: 800 }}>
         <Title level={2} style={{ textAlign: 'center' }}>Create New Receipt</Title>
         <Form
           form={form}
@@ -97,15 +113,18 @@ export default function CreateReceiptPage() {
               listType="picture"
               maxCount={1}
               beforeUpload={() => false} // Prevent Ant Design from uploading automatically
-              fileList={form.getFieldValue('image')}
-              onChange={(info) => {
-                form.setFieldsValue({ image: info.fileList });
-                setFileList(info.fileList); // Keep this for displaying the file in the Upload component
-              }}
+              fileList={fileList}
+              onChange={handleFileChange}
             >
               <Button icon={<UploadOutlined />}>Upload Image</Button>
             </Upload>
           </Form.Item>
+
+          {previewImage && (
+            <Form.Item>
+              <Image src={previewImage} alt="Receipt Preview" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }} />
+            </Form.Item>
+          )}
 
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} block>

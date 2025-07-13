@@ -13,9 +13,10 @@ export default function ProfileSettingsPage() {
   const [api, contextHolder] = notification.useNotification();
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.name) {
+    if (status === 'authenticated' && session?.user) {
       form.setFieldsValue({
         username: session.user.name,
+        email: session.user.email,
       });
     }
   }, [status, session, form]);
@@ -57,7 +58,10 @@ export default function ProfileSettingsPage() {
       if (values.username && values.username !== session?.user?.name) {
         await update({ name: values.username });
       }
-      form.resetFields(['password', 'confirm']); // Clear password fields after update
+      if (values.email && values.email !== session?.user?.email) {
+        await update({ email: values.email });
+      }
+      form.resetFields(['password', 'confirm', 'currentPassword']); // Clear password fields after update
     } catch (error: any) {
       api.error({
         message: 'Profile Update Failed',
@@ -69,9 +73,9 @@ export default function ProfileSettingsPage() {
   };
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div className="profile-container">
       {contextHolder}
-      <Card style={{ maxWidth: 600, margin: '0 auto' }}>
+      <Card className="profile-card" style={{ margin: '0 auto' }}>
         <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Profile Settings</Title>
         <Form
           form={form}
@@ -83,9 +87,39 @@ export default function ProfileSettingsPage() {
           <Form.Item
             name="username"
             label="Username"
-            rules={[{ required: true, message: 'Please input your username!' }]}
           >
-            <Input />
+            <Input readOnly />
+          </Form.Item>
+
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { required: true, message: 'Please input your email!' },
+              { type: 'email', message: 'Please enter a valid email!' },
+            ]}
+          >
+            <Input placeholder="Leave blank to keep current email" />
+          </Form.Item>
+
+          <Form.Item
+            name="currentPassword"
+            label="Current Password"
+            rules={[
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (getFieldValue('password') || getFieldValue('email') !== session?.user?.email) {
+                    if (!value) {
+                      return Promise.reject(new Error('Please input your current password to make changes!'));
+                    }
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+            hasFeedback
+          >
+            <Input.Password placeholder="Required to change password or email" />
           </Form.Item>
 
           <Form.Item

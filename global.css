@@ -2,3 +2,93 @@ body{
     margin: 0;
     padding: 0;
 }
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px !important; /* Consistent padding for all main content */
+  }
+
+  /* General Ant Design component top spacing removal - keep these as they are about margin-top/padding-top */
+  .main-content > .ant-card,
+  .main-content > .ant-form,
+  .main-content > .ant-table-wrapper,
+  .main-content > .ant-typography {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  .ant-typography.ant-typography-h2 {
+    margin-top: 0 !important;
+  }
+
+  .receipt-detail-container {
+    margin: 0 !important;
+  }
+
+  .receipt-detail-card .ant-card-body {
+    padding: 16px !important; /* Keep some padding inside the card body */
+  }
+
+  .receipt-descriptions .ant-descriptions-view {
+    /* Removed padding: 0 !important; */
+  }
+
+  .receipt-actions {
+    margin: 0 !important;
+  }
+
+  .gm-dashboard-container {
+    margin: 0 !important;
+  }
+
+  .hr-dashboard-container {
+    margin: 0 !important;
+  }
+
+  .profile-container {
+    margin: 0 !important;
+  }
+
+  .profile-card .ant-card-body {
+    padding: 16px !important; /* Keep some padding inside the card body */
+  }
+
+  .create-receipt-container {
+    margin: 0 !important;
+  }
+
+  .create-receipt-card .ant-card-body {
+    padding: 16px !important; /* Keep some padding inside the card body */
+  }
+
+  .receipts-history-container {
+    /* Removed padding: 8px !important; - will be covered by .main-content */
+  }
+
+  .manage-users-container {
+    margin: 0 !important;
+  }
+
+  .register-user-container {
+    margin: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    min-height: 100vh !important;
+    background: #f0f2f5 !important;
+  }
+
+  .register-user-card .ant-card-body {
+    padding: 16px !important; /* Keep some padding inside the card body */
+  }
+}
+
+/* Desktop padding for history container */
+.receipts-history-container {
+  padding: 24px;
+}
+
+/* Desktop width for profile card */
+.profile-card {
+  width: 400px;
+}

@@ -1,15 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Form, Input, Button, Card, Typography, message } from 'antd';
+import { signIn, getSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Form, Input, Button, Card, Typography, notification } from 'antd';
 
 const { Title } = Typography;
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'; // Default to dashboard
+  const [api, contextHolder] = notification.useNotification({
+    placement: 'bottomRight',
+  });
 
   const onFinish = async (values: any) => {
     setLoading(true);
@@ -21,15 +26,29 @@ export default function LoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      message.error(result.error);
+      api.error({
+        message: 'Login Failed',
+        description: result.error,
+      });
     } else {
-      message.success('Login successful!');
-      router.push('/dashboard');
+      console.log('Login successful, signIn result:', result);
+      notification.success({
+        message: 'Login Successful',
+        description: 'You have successfully logged in.',
+      });
+      const session = await getSession();
+      console.log('Session after getSession():', session);
+      if (session?.user?.role) {
+        router.push(`/dashboard/${session.user.role.toLowerCase()}`);
+      } else {
+        router.push(callbackUrl);
+      }
     }
   };
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f0f2f5' }}>
+      {contextHolder}
       <Card style={{ width: 400, textAlign: 'center' }}>
         <Title level={2}>Login</Title>
         <Form
