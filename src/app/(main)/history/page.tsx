@@ -231,7 +231,6 @@ export default function ReceiptsHistoryPage() {
 
     return (
         <div className="receipts-history-container">
-            {contextHolder}
             <Title level={2}>Receipts History</Title>
             <Table columns={session?.user.role === 'HR' ? hrColumns : columns} dataSource={receipts} rowKey="id"
                    pagination={{pageSize}} scroll={{x: 'max-content'}}/>

@@ -34,36 +34,36 @@ export default function Sidebar({ collapsed, setCollapsed }: { collapsed: boolea
   }, []);
 
   const menuItems = [
-    session?.user?.role && {
+    session?.user?.role ? {
       key: `/dashboard/${session.user.role.toLowerCase()}`,
       icon: <DashboardOutlined />,
       label: <Link href={`/dashboard/${session.user.role.toLowerCase()}`}>Dashboard</Link>,
-    },
-    session?.user?.role === 'HR' && {
+    } : null,
+    session?.user?.role === 'HR' ? {
       key: '/receipts/create',
       icon: <FileTextOutlined />,
       label: <Link href="/receipts/create">Create Receipt</Link>,
-    },
-    (session?.user?.role === 'DGM' || session?.user?.role === 'GM') && {
+    } : null,
+    (session?.user?.role === 'DGM' || session?.user?.role === 'GM') ? {
       key: '/history',
       icon: <HistoryOutlined />,
       label: <Link href="/history">History</Link>,
-    },
-    session?.user?.role === 'SECURITY' && {
+    } : null,
+    session?.user?.role === 'SECURITY' ? {
       key: '/receipts/pending',
       icon: <HistoryOutlined />,
       label: <Link href="/receipts/pending">Pending Receipts</Link>,
-    },
-    session?.user?.role === 'HR' && {
+    } : null,
+    session?.user?.role === 'HR' ? {
       key: '/users/register',
       icon: <UserAddOutlined />,
       label: <Link href="/users/register">Register User</Link>,
-    },
-    session?.user?.role === 'HR' && {
+    } : null,
+    session?.user?.role === 'HR' ? {
       key: '/users/manage',
       icon: <UserOutlined />,
       label: <Link href="/users/manage">Manage Users</Link>,
-    },
+    } : null,
     {
       key: '/profile',
       icon: <UserOutlined />,
@@ -87,10 +87,7 @@ export default function Sidebar({ collapsed, setCollapsed }: { collapsed: boolea
           theme="dark"
           mode="horizontal"
           defaultSelectedKeys={[pathname]}
-          items={menuItems.map(item => ({
-            ...item,
-            label: item.label
-          }))}
+          items={menuItems}
           style={{ display: 'flex', justifyContent: 'space-around' }}
         />
       </Footer>

@@ -35,7 +35,7 @@ export async function GET(
         role === 'HR' &&
         receipt.writtenById !== userId &&
         receipt.status !== 'APPROVED_FINAL' &&
-        receipt.status !== 'REJECTED_BY_MGM' &&
+        receipt.status !== 'REJECTED_BY_DGM' &&
         receipt.status !== 'REJECTED_BY_GM'
     ) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });

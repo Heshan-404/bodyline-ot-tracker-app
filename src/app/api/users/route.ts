@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import prisma from '../../../lib/prisma';
+import { UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 export async function GET(req: Request) {
@@ -9,7 +10,7 @@ export async function GET(req: Request) {
     const roleFilter = searchParams.get('role');
 
     const users = await prisma.user.findMany({
-      where: roleFilter ? { role: roleFilter } : {},
+      where: roleFilter ? { role: roleFilter as UserRole } : {},
       select: {
         id: true,
         username: true,

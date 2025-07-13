@@ -16,7 +16,7 @@ export async function PUT(
   }
 
   const { id } = params as { id: string };
-  const { role: userRole, username: userName } = session.user;
+  const { role: userRole, name: userName } = session.user;
 
   try {
     const receipt = await prisma.receipt.findUnique({

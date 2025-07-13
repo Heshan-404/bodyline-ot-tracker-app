@@ -34,21 +34,6 @@ export async function PUT(
     let updateData: any = { lastActionByRole: userRole };
 
     switch (userRole) {
-      case 'MGM':
-        if (receipt.status !== 'PENDING_MGM') {
-          return NextResponse.json({ message: 'Invalid status for MGM action' }, { status: 400 });
-        }
-        if (action === 'approve') {
-          newStatus = 'APPROVED_BY_MGM_PENDING_GM';
-          newCurrentApproverRole = 'GM';
-        } else if (action === 'reject') {
-          newStatus = 'REJECTED_BY_MGM';
-          newCurrentApproverRole = null;
-          updateData.rejectionReason = rejectionReason || 'Rejected by MGM';
-        } else {
-          return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
-        }
-        break;
       case 'DGM':
         if (receipt.status !== 'PENDING_DGM') {
           return NextResponse.json({ message: 'Invalid status for DGM action' }, { status: 400 });
@@ -101,21 +86,6 @@ export async function PUT(
           newCurrentApproverRole = null;
           updateData.rejectionReason = rejectionReason || 'Rejected by GM';
           updateData.gmActionBy = userName;
-        } else {
-          return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
-        }
-        break;
-      case 'SECURITY':
-        if (receipt.status !== 'APPROVED_BY_GM_PENDING_SECURITY') {
-          return NextResponse.json({ message: 'Invalid status for Security action' }, { status: 400 });
-        }
-        if (action === 'approve') {
-          newStatus = 'APPROVED_FINAL';
-          newCurrentApproverRole = null;
-        } else if (action === 'reject') {
-          newStatus = 'REJECTED_BY_GM'; // Using existing rejection status
-          newCurrentApproverRole = null;
-          updateData.rejectionReason = rejectionReason || 'Rejected by Security';
         } else {
           return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
         }
