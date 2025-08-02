@@ -136,7 +136,7 @@ export default function ManageUsersPage() {
         message: 'User deleted',
         description: `User ${userToDelete.username} has been successfully deleted.`,
       });
-      fetchUsers(roleFilter); // Refresh user list with current filter
+      fetchUsers(); // Refresh user list with current filter
     } catch (error: any) {
       api.error({
         message: 'Error deleting user',
@@ -181,7 +181,7 @@ export default function ManageUsersPage() {
       });
       setIsEditModalVisible(false);
       setEditingUser(null);
-      fetchUsers(roleFilter); // Refresh user list with current filter
+      fetchUsers(); // Refresh user list with current filter
     } catch (error: any) {
       api.error({
         message: 'Error updating user',
