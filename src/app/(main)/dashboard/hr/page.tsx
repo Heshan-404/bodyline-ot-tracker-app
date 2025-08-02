@@ -81,9 +81,12 @@ export default function HRDashboardPage() {
         return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
       },
       filters: [
+        { text: 'Pending Manager Approval', value: 'PENDING_MANAGER_APPROVAL' },
+        { text: 'Approved by Manager (Pending DGM)', value: 'APPROVED_BY_MANAGER_PENDING_DGM' },
+        { text: 'Rejected by Manager', value: 'REJECTED_BY_MANAGER' },
         { text: 'Pending DGM', value: 'PENDING_DGM' },
         { text: 'Rejected by DGM', value: 'REJECTED_BY_DGM' },
-        { text: 'Approved by DGM', value: 'APPROVED_BY_DGM_PENDING_GM' },
+        { text: 'Approved by DGM (Pending GM)', value: 'APPROVED_BY_DGM_PENDING_GM' },
         { text: 'Rejected by GM', value: 'REJECTED_BY_GM' },
         { text: 'Approved Final', value: 'APPROVED_FINAL' },
       ],
@@ -124,7 +127,7 @@ export default function HRDashboardPage() {
           <Button
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record.id)}
-            disabled={record.status !== 'PENDING_DGM'} // Changed from PENDING_MGM
+            disabled={record.status !== 'PENDING_DGM' && record.status !== 'PENDING_MANAGER_APPROVAL'} // Changed from PENDING_MGM
           />
         </Space>
       ),

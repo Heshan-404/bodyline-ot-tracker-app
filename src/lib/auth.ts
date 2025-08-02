@@ -37,6 +37,7 @@ export const authOptions: AuthOptions = {
           id: user.id,
           name: user.username,
           role: user.role,
+          sectionId: user.sectionId,
         };
       },
     }),
@@ -47,6 +48,9 @@ export const authOptions: AuthOptions = {
         token.role = user.role;
         token.id = user.id;
         token.name = user.name;
+        if (user.sectionId) {
+          token.sectionId = user.sectionId || undefined;
+        }
       }
       return token;
     },
@@ -59,6 +63,9 @@ export const authOptions: AuthOptions = {
       }
       if (token.name) {
         session.user.name = token.name;
+      }
+      if (token.sectionId) {
+        session.user.sectionId = token.sectionId || undefined;
       }
       return session;
     },

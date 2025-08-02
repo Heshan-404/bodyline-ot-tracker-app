@@ -29,11 +29,18 @@ export async function GET(req: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { username, password, role, email } = await request.json();
+    const { username, password, role, email, sectionId } = await request.json();
 
     if (!username || !password || !role || !email) {
       return NextResponse.json(
         { message: 'Username, password, role, and email are required' },
+        { status: 400 }
+      );
+    }
+
+    if (role === 'MANAGER' && !sectionId) {
+      return NextResponse.json(
+        { message: 'Section is required for Manager role' },
         { status: 400 }
       );
     }
@@ -62,6 +69,7 @@ export async function POST(request: Request) {
         email,
         passwordHash,
         role,
+        ...(role === 'MANAGER' && { sectionId }),
       },
     });
 

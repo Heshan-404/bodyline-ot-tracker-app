@@ -15,8 +15,8 @@ export default function DashboardPage() {
         case 'HR':
           router.push('/dashboard/hr');
           break;
-        case 'MGM':
-          router.push('/dashboard/mgm');
+        case 'MANAGER':
+          router.push('/dashboard/manager');
           break;
         case 'GM':
           router.push('/dashboard/gm');

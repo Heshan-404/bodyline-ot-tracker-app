@@ -39,6 +39,9 @@ const columns: TableColumnsType<Receipt> = [
     dataIndex: 'status',
     key: 'status',
     filters: [
+        { text: 'Pending Manager Approval', value: 'PENDING_MANAGER_APPROVAL' },
+        { text: 'Approved by Manager (Pending DGM)', value: 'APPROVED_BY_MANAGER_PENDING_DGM' },
+        { text: 'Rejected by Manager', value: 'REJECTED_BY_MANAGER' },
         { text: 'Pending DGM', value: 'PENDING_DGM' },
         { text: 'Approved by DGM (Pending GM)', value: 'APPROVED_BY_DGM_PENDING_GM' },
         { text: 'Rejected by DGM', value: 'REJECTED_BY_DGM' },

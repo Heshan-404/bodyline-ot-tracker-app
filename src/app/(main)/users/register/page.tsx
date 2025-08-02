@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, Select, notification } from 'antd';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +12,34 @@ export default function RegisterUserPage() {
   const [loading, setLoading] = useState(false);
   const [api, contextHolder] = notification.useNotification();
   const router = useRouter();
+  const [sections, setSections] = useState<{ id: string; name: string }[]>([]);
+  const [selectedRole, setSelectedRole] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const res = await fetch('/api/sections');
+        if (!res.ok) {
+          throw new Error('Failed to fetch sections');
+        }
+        const data = await res.json();
+        setSections(data);
+      } catch (error: any) {
+        api.error({
+          message: 'Error fetching sections',
+          description: error.message,
+        });
+      }
+    };
+    fetchSections();
+  }, []);
+
+  const handleRoleChange = (value: string) => {
+    setSelectedRole(value);
+    if (value !== 'MANAGER') {
+      form.setFieldsValue({ sectionId: undefined }); // Clear section if not manager
+    }
+  };
 
   const onFinish = async (values: any) => {
     setLoading(true);
@@ -105,13 +133,30 @@ export default function RegisterUserPage() {
             name="role"
             rules={[{ required: true, message: 'Please select a role!' }]}
           >
-            <Select placeholder="Select a role">
+            <Select placeholder="Select a role" onChange={handleRoleChange}>
               <Option value="HR">HR</Option>
+              <Option value="MANAGER">MANAGER</Option>
               <Option value="DGM">DGM</Option>
               <Option value="GM">GM</Option>
               <Option value="SECURITY">SECURITY</Option>
             </Select>
           </Form.Item>
+
+          {selectedRole === 'MANAGER' && (
+            <Form.Item
+              label="Section"
+              name="sectionId"
+              rules={[{ required: true, message: 'Please select a section for the manager!' }]}
+            >
+              <Select placeholder="Select a section">
+                {sections.map((section) => (
+                  <Option key={section.id} value={section.id}>
+                    {section.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} block>
               Register User

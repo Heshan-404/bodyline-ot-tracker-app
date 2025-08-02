@@ -35,31 +35,31 @@ export async function PUT(
 
     switch (userRole) {
       case 'DGM':
-        if (receipt.status !== 'PENDING_DGM') {
+        if (receipt.status !== 'APPROVED_BY_MANAGER_PENDING_DGM') {
           return NextResponse.json({ message: 'Invalid status for DGM action' }, { status: 400 });
         }
         if (action === 'approve') {
           newStatus = 'APPROVED_BY_DGM_PENDING_GM';
           newCurrentApproverRole = 'GM';
           updateData.dgmActionBy = userName;
-          // Notify all DGMs
-          const dgmUsers = await prisma.user.findMany({
-            where: { role: 'DGM' },
-            select: { email: true },
+          // Notify HR user
+          const hrUser = await prisma.user.findUnique({
+            where: { id: receipt.writtenById },
+            select: { email: true, username: true },
           });
-          const dgmEmails = dgmUsers.map((user) => user.email);
 
-          if (dgmEmails.length > 0) {
+          if (hrUser?.email) {
+            console.log('Sending DGM approval email to HR:', hrUser.email);
             const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${receipt.id}`;
             const emailHtml = `
-              <p>Dear DGM,</p>
-              <p>A receipt titled "<strong>${receipt.title}</strong>" has been approved by a DGM.</p>
+              <p>Dear ${hrUser.username},</p>
+              <p>Your receipt titled "<strong>${receipt.title}</strong>" has been approved by a DGM.</p>
               <p>Description: ${receipt.description || 'N/A'}</p>
               <p>You can view the details here: <a href="${receiptLink}">${receiptLink}</a></p>
               <p>Thank you.</p>
             `;
             await sendEmail({
-              to: dgmEmails,
+              to: hrUser.email,
               subject: `Receipt Approved by DGM: ${receipt.title}`,
               html: emailHtml,
             });
@@ -69,6 +69,28 @@ export async function PUT(
           newCurrentApproverRole = null;
           updateData.rejectionReason = rejectionReason || 'Rejected by DGM';
           updateData.dgmActionBy = userName;
+          // Notify HR user
+          const hrUser = await prisma.user.findUnique({
+            where: { id: receipt.writtenById },
+            select: { email: true, username: true },
+          });
+
+          if (hrUser?.email) {
+            console.log('Sending DGM rejection email to HR:', hrUser.email);
+            const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${receipt.id}`;
+            const emailHtml = `
+              <p>Dear ${hrUser.username},</p>
+              <p>Your receipt titled "<strong>${receipt.title}</strong>" has been rejected by a DGM.</p>
+              <p>Reason: ${rejectionReason || 'No reason provided.'}</p>
+              <p>You can view the details here: <a href="${receiptLink}">${receiptLink}</a></p>
+              <p>Thank you.</p>
+            `;
+            await sendEmail({
+              to: hrUser.email,
+              subject: `Receipt Rejected by DGM: ${receipt.title}`,
+              html: emailHtml,
+            });
+          }
         } else {
           return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
         }
@@ -81,11 +103,55 @@ export async function PUT(
           newStatus = 'APPROVED_FINAL';
           newCurrentApproverRole = null;
           updateData.gmActionBy = userName;
+          // Notify HR user
+          const hrUser = await prisma.user.findUnique({
+            where: { id: receipt.writtenById },
+            select: { email: true, username: true },
+          });
+
+          if (hrUser?.email) {
+            console.log('Sending GM approval email to HR:', hrUser.email);
+            const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${receipt.id}`;
+            const emailHtml = `
+              <p>Dear ${hrUser.username},</p>
+              <p>Your receipt titled "<strong>${receipt.title}</strong>" has been approved by a GM.</p>
+              <p>Description: ${receipt.description || 'N/A'}</p>
+              <p>You can view the details here: <a href="${receiptLink}">${receiptLink}</a></p>
+              <p>Thank you.</p>
+            `;
+            await sendEmail({
+              to: hrUser.email,
+              subject: `Receipt Approved by GM: ${receipt.title}`,
+              html: emailHtml,
+            });
+          }
         } else if (action === 'reject') {
           newStatus = 'REJECTED_BY_GM';
           newCurrentApproverRole = null;
           updateData.rejectionReason = rejectionReason || 'Rejected by GM';
           updateData.gmActionBy = userName;
+          // Notify HR user
+          const hrUser = await prisma.user.findUnique({
+            where: { id: receipt.writtenById },
+            select: { email: true, username: true },
+          });
+
+          if (hrUser?.email) {
+            console.log('Sending GM rejection email to HR:', hrUser.email);
+            const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${receipt.id}`;
+            const emailHtml = `
+              <p>Dear ${hrUser.username},</p>
+              <p>Your receipt titled "<strong>${receipt.title}</strong>" has been rejected by a GM.</p>
+              <p>Reason: ${rejectionReason || 'No reason provided.'}</p>
+              <p>You can view the details here: <a href="${receiptLink}">${receiptLink}</a></p>
+              <p>Thank you.</p>
+            `;
+            await sendEmail({
+              to: hrUser.email,
+              subject: `Receipt Rejected by GM: ${receipt.title}`,
+              html: emailHtml,
+            });
+          }
         } else {
           return NextResponse.json({ message: 'Invalid action' }, { status: 400 });
         }

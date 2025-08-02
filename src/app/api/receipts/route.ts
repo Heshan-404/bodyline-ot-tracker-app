@@ -49,8 +49,12 @@ export async function GET(req: NextRequest) {
       case 'HR':
         whereClause.writtenById = userId;
         break;
+      case 'MANAGER':
+        whereClause.status = 'PENDING_MANAGER_APPROVAL';
+        whereClause.sectionId = session.user.sectionId; // Assuming sectionId is available in session
+        break;
       case 'DGM':
-        whereClause.status = 'PENDING_DGM';
+        whereClause.status = 'APPROVED_BY_MANAGER_PENDING_DGM';
         break;
       case 'GM':
         whereClause.status = 'APPROVED_BY_DGM_PENDING_GM';
@@ -95,10 +99,11 @@ export async function POST(req: NextRequest) {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
     const imageFile = formData.get('image') as File;
+    const sectionId = formData.get('sectionId') as string;
 
-    if (!title || !imageFile) {
+    if (!title || !imageFile || !sectionId) {
       return NextResponse.json(
-        { message: 'Missing required fields' },
+        { message: 'Missing required fields: title, image, or section' },
         { status: 400 }
       );
     }
@@ -116,19 +121,21 @@ export async function POST(req: NextRequest) {
         description,
         imageUrl,
         writtenById: session.user.id,
-        status: 'PENDING_DGM',
-        currentApproverRole: 'DGM',
+        sectionId,
+        status: 'PENDING_MANAGER_APPROVAL',
+        currentApproverRole: 'MANAGER',
       },
     });
 
-    // Send email to all DGMs
-    const dgmUsers = await prisma.user.findMany({
-      where: { role: 'DGM' },
+    // Send email to all Managers in the selected section
+    const managersInSection = await prisma.user.findMany({
+      where: { role: 'MANAGER', sectionId: sectionId },
       select: { email: true },
     });
-    const dgmEmails = dgmUsers.map((user) => user.email);
+    const managerEmails = managersInSection.map((user) => user.email);
 
-    if (dgmEmails.length > 0) {
+    if (managerEmails.length > 0) {
+      console.log('Sending new receipt email to managers:', managerEmails);
       const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${newReceipt.id}`;
       const emailHtml = newReceiptTemplate({
         title: newReceipt.title,
@@ -136,7 +143,7 @@ export async function POST(req: NextRequest) {
         receiptLink,
       });
       await sendEmail({
-        to: dgmEmails,
+        to: managerEmails,
         subject: `New Receipt for Your Approval: ${newReceipt.title}`,
         html: emailHtml,
       });

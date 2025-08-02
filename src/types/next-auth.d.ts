@@ -5,18 +5,21 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: string;
+      role: "HR" | "MANAGER" | "DGM" | "GM" | "SECURITY";
       name?: string | null;
+      sectionId?: string | null; // Allow sectionId to be null
     } & DefaultSession["user"];
   }
 
   interface User extends DefaultUser {
-    role: string;
+    role: "HR" | "MANAGER" | "DGM" | "GM" | "SECURITY";
+    sectionId?: string | null; // Allow sectionId to be null
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
-    role: string;
+    role: "HR" | "MANAGER" | "DGM" | "GM" | "SECURITY";
+    sectionId?: string | null; // Allow sectionId to be null
   }
 }

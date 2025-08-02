@@ -37,7 +37,9 @@ export async function GET(
         receipt.writtenById !== userId &&
         receipt.status !== 'APPROVED_FINAL' &&
         receipt.status !== 'REJECTED_BY_DGM' &&
-        receipt.status !== 'REJECTED_BY_GM'
+        receipt.status !== 'REJECTED_BY_GM' &&
+        receipt.status !== 'PENDING_MANAGER_APPROVAL' &&
+        receipt.status !== 'REJECTED_BY_MANAGER'
     ) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
@@ -75,9 +77,9 @@ export async function DELETE(
       return NextResponse.json({ message: 'Receipt not found' }, { status: 404 });
     }
 
-    if (session.user.role !== 'HR' || receipt.status !== 'PENDING_DGM') {
+    if (session.user.role !== 'HR' || (receipt.status !== 'PENDING_DGM' && receipt.status !== 'PENDING_MANAGER_APPROVAL')) {
       return NextResponse.json(
-          { message: 'Forbidden: Only HR can delete receipts, and only if their status is PENDING_DGM.' },
+          { message: 'Forbidden: Only HR can delete receipts, and only if their status is PENDING_DGM or PENDING_MANAGER_APPROVAL.' },
           { status: 403 }
       );
     }

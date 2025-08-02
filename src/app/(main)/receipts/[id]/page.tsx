@@ -22,6 +22,7 @@ interface Receipt {
   rejectionReason?: string | null;
   dgmActionBy?: string | null;
   gmActionBy?: string | null;
+  managerActionBy?: string | null;
 }
 
 export default function ReceiptDetailPage() {
@@ -72,7 +73,8 @@ export default function ReceiptDetailPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`/api/receipts/${id}/status`, {
+      const endpoint = session.user.role === 'MANAGER' ? `/api/receipts/${id}/manager-action` : `/api/receipts/${id}/status`;
+      const res = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

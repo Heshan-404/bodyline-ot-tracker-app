@@ -80,7 +80,7 @@ export default function DGMDashboardPage() {
   const fetchReceipts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/receipts?status=PENDING_DGM');
+      const res = await fetch('/api/receipts?status=APPROVED_BY_MANAGER_PENDING_DGM');
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to fetch receipts');
@@ -118,7 +118,7 @@ export default function DGMDashboardPage() {
         return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
       },
       filters: [
-        { text: 'Pending DGM', value: 'PENDING_DGM' },
+        { text: 'Approved by Manager (Pending DGM)', value: 'APPROVED_BY_MANAGER_PENDING_DGM' },
         { text: 'Approved by DGM', value: 'APPROVED_BY_DGM_PENDING_GM' },
         { text: 'Rejected by DGM', value: 'REJECTED_BY_DGM' },
         { text: 'Approved Final', value: 'APPROVED_FINAL' },

@@ -15,7 +15,7 @@ export async function GET() {
     const receipts = await prisma.receipt.findMany({
       where: {
         status: {
-          in: ['PENDING_DGM', 'APPROVED_BY_DGM_PENDING_GM', 'REJECTED_BY_DGM', 'REJECTED_BY_GM'],
+          in: ['PENDING_MANAGER_APPROVAL', 'APPROVED_BY_MANAGER_PENDING_DGM', 'PENDING_DGM', 'APPROVED_BY_DGM_PENDING_GM', 'REJECTED_BY_MANAGER', 'REJECTED_BY_DGM', 'REJECTED_BY_GM'],
         },
       },
       orderBy: {

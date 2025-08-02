@@ -16,40 +16,31 @@ export async function PUT(
   }
 
   const { id } = params.params;
-  const { username, email, role } = await req.json();
+  const { username, email, role, sectionId } = await req.json();
 
   // HR can update any user's email. Only HR and Security can update roles.
   if (session.user.role === 'HR') {
     // HR can update email for any user
+    const updateData: any = {};
     if (email) {
-      try {
-        const updatedUser = await prisma.user.update({
-          where: { id },
-          data: {
-            email,
-          },
-        });
-        return NextResponse.json(updatedUser);
-      } catch (error) {
-        console.error('Error updating user email:', error);
-        return NextResponse.json(
-          { message: 'Internal server error' },
-          { status: 500 }
-        );
-      }
+      updateData.email = email;
     }
-    // HR can also update roles, but only if they are not changing their own role
     if (role && session.user.id !== id) {
+      updateData.role = role;
+    }
+    if (sectionId) {
+      updateData.sectionId = sectionId;
+    }
+
+    if (Object.keys(updateData).length > 0) {
       try {
         const updatedUser = await prisma.user.update({
           where: { id },
-          data: {
-            role,
-          },
+          data: updateData,
         });
         return NextResponse.json(updatedUser);
       } catch (error) {
-        console.error('Error updating user role:', error);
+        console.error('Error updating user:', error);
         return NextResponse.json(
           { message: 'Internal server error' },
           { status: 500 }
@@ -57,7 +48,7 @@ export async function PUT(
       }
     }
   } else if (session.user.role === 'SECURITY') {
-    // Security can update username, email, and role for any user
+    // Security can update username, email, role, and sectionId for any user
     try {
       const updatedUser = await prisma.user.update({
         where: { id },
@@ -65,6 +56,7 @@ export async function PUT(
           username,
           email,
           role,
+          sectionId,
         },
       });
       return NextResponse.json(updatedUser);

@@ -23,6 +23,7 @@ interface Receipt {
   lastActionByRole?: string | null;
   rejectionReason?: string | null;
   dgmActionBy?: string | null;
+  managerActionBy?: string | null;
   gmActionBy?: string | null;
 }
 

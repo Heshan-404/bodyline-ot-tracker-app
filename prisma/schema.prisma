@@ -14,6 +14,15 @@ model User {
   passwordHash String
   role         UserRole
   receipts     Receipt[] @relation("WrittenBy")
+  sectionId    String?
+  section      Section?  @relation("ManagerSection", fields: [sectionId], references: [id])
+}
+
+model Section {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  managers  User[]    @relation("ManagerSection")
+  receipts  Receipt[] @relation("ReceiptSection")
 }
 
 model Receipt {
@@ -28,23 +37,30 @@ model Receipt {
   currentApproverRole UserRole?
   lastActionByRole    UserRole?
   rejectionReason     String?
+  managerActionBy     String?
   dgmActionBy         String?
   gmActionBy          String?
   securityActionBy    String?
   writtenBy           User          @relation("WrittenBy", fields: [writtenById], references: [id])
+  sectionId           String
+  section             Section       @relation("ReceiptSection", fields: [sectionId], references: [id])
 }
 
 enum UserRole {
   HR
+  MANAGER
   DGM
   GM
   SECURITY
 }
 
 enum ReceiptStatus {
+  PENDING_MANAGER_APPROVAL
+  APPROVED_BY_MANAGER_PENDING_DGM
   PENDING_DGM
   APPROVED_BY_DGM_PENDING_GM
   APPROVED_FINAL
+  REJECTED_BY_MANAGER
   REJECTED_BY_DGM
   REJECTED_BY_GM
 }

@@ -44,7 +44,7 @@ export default function Sidebar({ collapsed, setCollapsed }: { collapsed: boolea
       icon: <FileTextOutlined />,
       label: <Link href="/receipts/create">Create Receipt</Link>,
     } : null,
-    (session?.user?.role === 'DGM' || session?.user?.role === 'GM') ? {
+    (session?.user?.role === 'DGM' || session?.user?.role === 'GM' || session?.user?.role === 'MANAGER') ? {
       key: '/history',
       icon: <HistoryOutlined />,
       label: <Link href="/history">History</Link>,

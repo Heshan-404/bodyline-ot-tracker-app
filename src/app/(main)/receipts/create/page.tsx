@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Form, Input, Button, Upload, notification, Card, Typography, Image } from 'antd';
+import { useState, useEffect } from 'react';
+import { Form, Input, Button, Upload, notification, Card, Typography, Image, Select } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 const { Title } = Typography;
+const { Option } = Select;
 
 export default function CreateReceiptPage() {
   const [form] = Form.useForm();
@@ -15,6 +16,26 @@ export default function CreateReceiptPage() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const router = useRouter();
   const { data: session, status } = useSession();
+  const [sections, setSections] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const res = await fetch('/api/sections');
+        if (!res.ok) {
+          throw new Error('Failed to fetch sections');
+        }
+        const data = await res.json();
+        setSections(data);
+      } catch (error: any) {
+        notification.error({
+          message: 'Error fetching sections',
+          description: error.message,
+        });
+      }
+    };
+    fetchSections();
+  }, []);
 
   if (status === 'loading') {
     return <div>Loading...</div>;
@@ -91,6 +112,20 @@ export default function CreateReceiptPage() {
             rules={[{ required: true, message: 'Please input the title!' }]}
           >
             <Input />
+          </Form.Item>
+
+          <Form.Item
+            label="Section"
+            name="sectionId"
+            rules={[{ required: true, message: 'Please select a section!' }]}
+          >
+            <Select placeholder="Select a section">
+              {sections.map((section) => (
+                <Option key={section.id} value={section.id}>
+                  {section.name}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
 
           

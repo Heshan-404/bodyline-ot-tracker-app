@@ -16,6 +16,8 @@ interface User {
   username: string;
   email: string;
   role: string;
+  sectionId?: string;
+  section?: { name: string };
 }
 
 export default function ManageUsersPage() {
@@ -24,11 +26,17 @@ export default function ManageUsersPage() {
   const [loading, setLoading] = useState(true);
   const [api, contextHolder] = notification.useNotification();
   const router = useRouter();
-  const [roleFilter, setRoleFilter] = useState<string | undefined>(undefined);
+  
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editForm] = Form.useForm();
   const [pageSize, setPageSize] = useState(10);
+  const [sections, setSections] = useState<{ id: string; name: string }[]>([]);
+
+  const [isManageSectionsTableVisible, setIsManageSectionsTableVisible] = useState(false);
+  const [isCreateEditSectionFormVisible, setIsCreateEditSectionFormVisible] = useState(false);
+  const [sectionForm] = Form.useForm();
+  const [editingSection, setEditingSection] = useState<{ id: string; name: string } | null>(null);
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; username: string } | null>(null);
@@ -50,6 +58,25 @@ export default function ManageUsersPage() {
   const [width, height] = useWindowSize();
 
   useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const res = await fetch('/api/sections');
+        if (!res.ok) {
+          throw new Error('Failed to fetch sections');
+        }
+        const data = await res.json();
+        setSections(data);
+      } catch (error: any) {
+        api.error({
+          message: 'Error fetching sections',
+          description: error.message,
+        });
+      }
+    };
+    fetchSections();
+  }, []);
+
+  useEffect(() => {
     if (height) {
       const newPageSize = Math.floor((height - 400) / 50);
       setPageSize(newPageSize > 0 ? newPageSize : 1);
@@ -58,14 +85,14 @@ export default function ManageUsersPage() {
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.role === 'HR') {
-      fetchUsers(roleFilter);
+      fetchUsers();
     } else if (status === 'unauthenticated') {
       api.error({
         message: 'Authorization Error',
         description: 'You are not authorized to view this page.',
       });
     }
-  }, [session, status, api, roleFilter]);
+  }, [session, status, api]);
 
   const fetchUsers = async (filter?: string) => {
     try {
@@ -129,35 +156,35 @@ export default function ManageUsersPage() {
 
   const handleEditUser = (user: User) => {
     setEditingUser(user);
-    editForm.setFieldsValue({ email: user.email });
+    editForm.setFieldsValue({ email: user.email, sectionId: user.sectionId });
     setIsEditModalVisible(true);
   };
 
-  const handleUpdateEmail = async (values: { email: string }) => {
+  const handleUpdateUser = async (values: { email: string; sectionId?: string }) => {
     if (!editingUser) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/users/${editingUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email }),
+        body: JSON.stringify({ email: values.email, sectionId: values.sectionId }),
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to update email');
+        throw new Error(errorData.message || 'Failed to update user');
       }
 
       api.success({
-        message: 'Email updated',
-        description: `Email for ${editingUser.username} has been updated.`,
+        message: 'User updated',
+        description: `User ${editingUser.username} has been updated.`,
       });
       setIsEditModalVisible(false);
       setEditingUser(null);
       fetchUsers(roleFilter); // Refresh user list with current filter
     } catch (error: any) {
       api.error({
-        message: 'Error updating email',
+        message: 'Error updating user',
         description: error.message,
       });
     } finally {
@@ -169,6 +196,112 @@ export default function ManageUsersPage() {
     setIsEditModalVisible(false);
     setEditingUser(null);
     editForm.resetFields();
+  };
+
+  const fetchSections = async () => {
+    try {
+      const res = await fetch('/api/sections');
+      if (!res.ok) {
+        throw new Error('Failed to fetch sections');
+      }
+      const data = await res.json();
+      setSections(data);
+    } catch (error: any) {
+      api.error({
+        message: 'Error fetching sections',
+        description: error.message,
+      });
+    }
+  };
+
+  const showManageSectionsTableModal = () => {
+    setIsManageSectionsTableVisible(true);
+    fetchSections(); // Refresh sections when opening the table
+  };
+
+  const showCreateEditSectionFormModal = (section?: { id: string; name: string }) => {
+    setEditingSection(section || null);
+    sectionForm.resetFields();
+    if (section) {
+      sectionForm.setFieldsValue(section);
+    }
+    setIsCreateEditSectionFormVisible(true);
+  };
+
+  const handleCancelManageSectionsTableModal = () => {
+    setIsManageSectionsTableVisible(false);
+  };
+
+  const handleCancelCreateEditSectionFormModal = () => {
+    setIsCreateEditSectionFormVisible(false);
+    setEditingSection(null);
+    sectionForm.resetFields();
+  };
+
+  const handleCreateOrUpdateSection = async (values: { name: string }) => {
+    try {
+      let res;
+      if (editingSection) {
+        res = await fetch('/api/sections', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingSection.id, name: values.name }),
+        });
+      } else {
+        res = await fetch('/api/sections', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: values.name }),
+        });
+      }
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to save section');
+      }
+
+      api.success({
+        message: 'Section saved',
+        description: `Section ${values.name} has been successfully saved.`,
+      });
+      fetchSections();
+      handleCancelCreateEditSectionFormModal();
+    } catch (error: any) {
+      api.error({
+        message: 'Error saving section',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleDeleteSection = async (id: string) => {
+    try {
+      const res = await fetch('/api/sections', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to delete section');
+      }
+
+      api.success({
+        message: 'Section deleted',
+        description: 'Section has been successfully deleted.',
+      });
+      fetchSections();
+    } catch (error: any) {
+      api.error({
+        message: 'Error deleting section',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleEditSection = (section: { id: string; name: string }) => {
+    showCreateEditSectionFormModal(section);
   };
 
   const userColumns: ColumnsType<User> = [
@@ -189,11 +322,20 @@ export default function ManageUsersPage() {
       key: 'role',
       filters: [
         { text: 'HR', value: 'HR' },
+        { text: 'MANAGER', value: 'MANAGER' },
         { text: 'DGM', value: 'DGM' },
         { text: 'GM', value: 'GM' },
         { text: 'SECURITY', value: 'SECURITY' },
       ],
       onFilter: (value, record) => record.role.indexOf(value as string) === 0,
+    },
+    {
+      title: 'Section',
+      dataIndex: ['section', 'name'],
+      key: 'section',
+      render: (text, record) => record.role === 'MANAGER' ? text : 'N/A',
+      filters: sections.map(section => ({ text: section.name, value: section.id })),
+      onFilter: (value, record) => record.sectionId === value,
     },
     {
       title: 'Action',
@@ -233,51 +375,13 @@ export default function ManageUsersPage() {
     <div className="manage-users-container" style={{ padding: '24px' }}>
       {contextHolder}
       <Title level={2}>User Management</Title>
-      <div style={{ marginBottom: 16 }}>
-        <Select
-          placeholder="Filter by Role"
-          style={{ width: 200 }}
-          onChange={(value) => setRoleFilter(value === 'all' ? undefined : value)}
-          value={roleFilter || 'all'}
-        >
-          <Option value="all">All Roles</Option>
-          <Option value="HR">HR</Option>
-          <Option value="DGM">DGM</Option>
-          <Option value="GM">GM</Option>
-          <Option value="SECURITY">SECURITY</Option>
-        </Select>
-      </div>
+      <Button type="primary" onClick={showManageSectionsTableModal} style={{ marginBottom: 16 }}>
+        Manage Sections
+      </Button>
+      
       <Table columns={userColumns} dataSource={users} rowKey="id" pagination={{ pageSize }} scroll={{ x: 'max-content' }} />
 
-      <Modal
-        title="Edit User Email"
-        open={isEditModalVisible}
-        onCancel={handleCancelEdit}
-        footer={null}
-      >
-        <Form
-          form={editForm}
-          layout="vertical"
-          onFinish={handleUpdateEmail}
-          initialValues={editingUser || {}}
-        >
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: 'Please input the new email!' },
-              { type: 'email', message: 'Please enter a valid email!' },
-            ]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              Update Email
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+
 
       {userToDelete && (
         <ConfirmationModal
@@ -289,6 +393,65 @@ export default function ManageUsersPage() {
           confirmLoading={deleteLoading}
         />
       )}
+
+      <Modal
+        title={editingSection ? 'Edit Section' : 'Create New Section'}
+        open={isCreateEditSectionFormVisible}
+        onCancel={handleCancelCreateEditSectionFormModal}
+        footer={null}
+      >
+        <Form
+          form={sectionForm}
+          layout="vertical"
+          onFinish={handleCreateOrUpdateSection}
+        >
+          <Form.Item
+            label="Section Name"
+            name="name"
+            rules={[{ required: true, message: 'Please input the section name!' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">
+              {editingSection ? 'Update Section' : 'Create Section'}
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Manage Sections"
+        open={isManageSectionsTableVisible}
+        onCancel={handleCancelManageSectionsTableModal}
+        footer={[
+          <Button key="back" onClick={handleCancelManageSectionsTableModal}>
+            Close
+          </Button>,
+          <Button key="add" type="primary" onClick={() => showCreateEditSectionFormModal()}>
+            Add Section
+          </Button>,
+        ]}
+      >
+        <Table
+          columns={[
+            { title: 'Name', dataIndex: 'name', key: 'name' },
+            {
+              title: 'Action',
+              key: 'action',
+              render: (_, record) => (
+                <Space>
+                  <Button icon={<EditOutlined />} onClick={() => handleEditSection(record)} />
+                  <Button icon={<DeleteOutlined />} danger onClick={() => handleDeleteSection(record.id)} />
+                </Space>
+              ),
+            },
+          ]}
+          dataSource={sections}
+          rowKey="id"
+          pagination={false}
+        />
+      </Modal>
     </div>
   );
 }
