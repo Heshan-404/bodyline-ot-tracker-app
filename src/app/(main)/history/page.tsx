@@ -2,7 +2,8 @@
 
 import {useEffect, useState, useCallback} from 'react';
 import {useSession} from 'next-auth/react';
-import {Table, Tag, notification, Spin, Typography, Button, Space} from 'antd';
+import {Table, Tag, Spin, Typography, Button, Space} from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type {ColumnsType} from 'antd/es/table';
 import Link from 'next/link';
 import {EyeOutlined} from '@ant-design/icons';
@@ -31,6 +32,7 @@ export default function ReceiptsHistoryPage() {
     const {data: session, status} = useSession();
     const [receipts, setReceipts] = useState<Receipt[]>([]);
     const [loading, setLoading] = useState(true);
+    const api = useNotification();
     const router = useRouter();
     const [pageSize, setPageSize] = useState(10);
 
@@ -68,7 +70,7 @@ export default function ReceiptsHistoryPage() {
             const data = await res.json();
             setReceipts(data);
         } catch (error: any) {
-            notification.error({
+            api.error({
                 message: 'Error fetching receipts',
                 description: error.message,
             });
@@ -88,13 +90,13 @@ export default function ReceiptsHistoryPage() {
                 throw new Error(errorData.message || 'Failed to delete receipt');
             }
 
-            notification.success({
+            api.success({
                 message: 'Receipt Deleted',
                 description: 'The receipt has been successfully deleted.',
             });
             fetchReceipts(); // Refresh the list
         } catch (error: any) {
-            notification.error({
+            api.error({
                 message: 'Error Deleting Receipt',
                 description: error.message,
             });

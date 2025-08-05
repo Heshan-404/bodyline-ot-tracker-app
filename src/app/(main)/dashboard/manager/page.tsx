@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Table, Tag, notification, Spin, Typography, Button, Space } from 'antd';
+import { Table, Tag, Spin, Typography, Button, Space } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
 import { EyeOutlined } from '@ant-design/icons';
@@ -29,7 +30,7 @@ export default function ManagerDashboardPage() {
   const { data: session, status } = useSession();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [api, contextHolder] = notification.useNotification();
+  const api = useNotification();
   const router = useRouter();
   const [pageSize, setPageSize] = useState(10);
 
@@ -166,7 +167,7 @@ export default function ManagerDashboardPage() {
 
   return (
     <div className="manager-dashboard-container" style={{ padding: '24px' }}>
-      {contextHolder}
+      
       <Title level={2}>Manager Dashboard - Pending Receipts</Title>
       <Table columns={columns} dataSource={receipts} rowKey="id" pagination={{ pageSize }} scroll={{ x: 'max-content' }} />
     </div>

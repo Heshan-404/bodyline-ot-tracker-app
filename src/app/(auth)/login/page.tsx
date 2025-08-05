@@ -3,7 +3,8 @@
 import { useState, Suspense } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Form, Input, Button, Card, Typography, notification } from 'antd';
+import { Form, Input, Button, Card, Typography } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 
 const { Title } = Typography;
 
@@ -12,9 +13,7 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'; // Default to dashboard
-  const [api, contextHolder] = notification.useNotification({
-    placement: 'bottomRight',
-  });
+  const api = useNotification();
 
   const onFinish = async (values: any) => {
     setLoading(true);
@@ -32,7 +31,7 @@ function LoginPageContent() {
       });
     } else {
       console.log('Login successful, signIn result:', result);
-      notification.success({
+      api.success({
         message: 'Login Successful',
         description: 'You have successfully logged in.',
       });
@@ -48,7 +47,7 @@ function LoginPageContent() {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f0f2f5' }}>
-      {contextHolder}
+      
       <Card style={{ width: 400, textAlign: 'center' }}>
         <Title level={2}>Login</Title>
         <Form

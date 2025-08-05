@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Form, Input, Button, Upload, notification, Card, Typography, Image, Select } from 'antd';
+import { Form, Input, Button, Upload, Card, Typography, Image, Select } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import { UploadOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -17,6 +18,7 @@ export default function CreateReceiptPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [sections, setSections] = useState<{ id: string; name: string }[]>([]);
+  const notification = useNotification();
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -51,6 +53,7 @@ export default function CreateReceiptPage() {
     try {
       const formData = new FormData();
       formData.append('title', values.title);
+      formData.append('sectionId', values.sectionId);
       formData.append('description', values.description || '');
       if (fileList.length > 0) {
         formData.append('image', fileList[0].originFileObj as File);

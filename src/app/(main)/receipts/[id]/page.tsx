@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Descriptions, Image, Spin, Typography, notification, Tag, Button, Modal, Form, Input } from 'antd';
+import { Card, Descriptions, Image, Spin, Typography, Tag, Button, Modal, Form, Input } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -32,7 +33,7 @@ export default function ReceiptDetailPage() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [api, contextHolder] = notification.useNotification();
+  const api = useNotification();
   const [isRejectModalVisible, setIsRejectModalVisible] = useState(false);
   const [rejectionForm] = Form.useForm();
 
@@ -159,7 +160,7 @@ export default function ReceiptDetailPage() {
 
   return (
     <div className="receipt-detail-container">
-      {contextHolder}
+      
       <Button
         type="text"
         icon={<ArrowLeftOutlined />}

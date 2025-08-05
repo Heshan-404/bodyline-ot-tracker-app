@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Table, Tag, notification, Spin, Typography, Button, Space } from 'antd';
+import { Table, Tag, Spin, Typography, Button, Space } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
 
 import { useRouter } from 'next/navigation';
@@ -32,7 +33,7 @@ export default function HRDashboardPage() {
   const { data: session, status } = useSession();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [api, contextHolder] = notification.useNotification();
+  const api = useNotification();
   const router = useRouter();
   const [pageSize, setPageSize] = useState(10);
 
@@ -220,7 +221,7 @@ export default function HRDashboardPage() {
 
   return (
     <div className="hr-dashboard-container" style={{ padding: '24px' }}>
-      {contextHolder}
+      
       <Title level={2}>HR Dashboard - All Receipts</Title>
       <Table columns={columns} dataSource={receipts} rowKey="id" pagination={{ pageSize }} scroll={{ x: 'max-content' }} />
     </div>

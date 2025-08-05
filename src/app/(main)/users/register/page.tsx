@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Typography, Select, notification } from 'antd';
+import { Form, Input, Button, Card, Typography, Select } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import { useRouter } from 'next/navigation';
 
 const { Title } = Typography;
@@ -10,7 +11,7 @@ const { Option } = Select;
 export default function RegisterUserPage() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [api, contextHolder] = notification.useNotification();
+  const api = useNotification();
   const router = useRouter();
   const [sections, setSections] = useState<{ id: string; name: string }[]>([]);
   const [selectedRole, setSelectedRole] = useState<string | undefined>(undefined);
@@ -74,7 +75,7 @@ export default function RegisterUserPage() {
 
   return (
     <div className="register-user-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      {contextHolder}
+      
       <Card className="register-user-card" style={{ width: 500 }}>
         <Title level={2}>Register New User</Title>
         <Form

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Table, notification, Spin, Typography, Button, Modal, Select, Form, Input, Space } from 'antd';
+import { Table, Spin, Typography, Button, Modal, Select, Form, Input, Space } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
@@ -24,7 +25,7 @@ export default function ManageUsersPage() {
   const { data: session, status } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [api, contextHolder] = notification.useNotification();
+  const api = useNotification();
   const router = useRouter();
   
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -373,7 +374,7 @@ export default function ManageUsersPage() {
 
   return (
     <div className="manage-users-container" style={{ padding: '24px' }}>
-      {contextHolder}
+      
       <Title level={2}>User Management</Title>
       <Button type="primary" onClick={showManageSectionsTableModal} style={{ marginBottom: 16 }}>
         Manage Sections

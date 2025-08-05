@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Table, Tag, notification, Spin, Typography, Button, Space } from 'antd';
+import { Table, Tag, Spin, Typography, Button, Space } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -31,7 +32,7 @@ export default function SecurityDashboardPage() {
   const { data: session, status } = useSession();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [api, contextHolder] = notification.useNotification();
+  const api = useNotification();
   const router = useRouter();
   const [pageSize, setPageSize] = useState(10);
 
@@ -149,7 +150,7 @@ export default function SecurityDashboardPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      {contextHolder}
+      
       <Title level={2}>Security Dashboard - Approved Receipts</Title>
       <Table
         columns={columns}

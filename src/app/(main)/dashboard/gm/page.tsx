@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Table, Tag, notification, Spin, Typography, Button, Space } from 'antd';
+import { Table, Tag, Spin, Typography, Button, Space } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -33,6 +34,7 @@ export default function GMDashboardPage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [pageSize, setPageSize] = useState(10);
+  const api = useNotification();
 
   useEffect(() => {
     const calculatePageSize = () => {
@@ -54,7 +56,7 @@ export default function GMDashboardPage() {
     if (status === 'authenticated' && session?.user?.role === 'GM') {
       fetchReceipts();
     } else if (status === 'unauthenticated') {
-      notification.error({
+      api.error({
         message: 'Authorization Error',
         description: 'You are not authorized to view this page.',
       });
@@ -73,7 +75,7 @@ export default function GMDashboardPage() {
       console.log('Fetched receipts for GM Dashboard:', data);
       setReceipts(data);
     } catch (error: any) {
-      notification.error({
+      api.error({
         message: 'Error fetching receipts',
         description: error.message,
       });

@@ -75,7 +75,7 @@ export default function Sidebar({ collapsed, setCollapsed }: { collapsed: boolea
       label: 'Logout',
       onClick: () =>
         signOut({
-          callbackUrl: '/login',
+          callbackUrl: window.location.origin + '/login',
         }),
     },
   ].filter(Boolean);

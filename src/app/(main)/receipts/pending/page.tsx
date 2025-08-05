@@ -2,7 +2,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Table, Tag, message, Button, Space } from 'antd';
+import { Table, Tag, Button, Space } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { TableColumnsType } from 'antd';
 import Link from 'next/link';
 import { EyeOutlined } from '@ant-design/icons';
@@ -89,6 +90,7 @@ export default function PendingReceiptsPage() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   const [pageSize, setPageSize] = useState(10);
+  const api = useNotification();
 
   const useWindowSize = () => {
     const [size, setSize] = useState([0, 0]);
@@ -122,7 +124,10 @@ export default function PendingReceiptsPage() {
         const data = await response.json();
         setReceipts(data);
       } catch (error) {
-        message.error('Failed to fetch receipts');
+        api.error({
+          message: 'Error fetching receipts',
+          description: 'Failed to fetch receipts',
+        });
       } finally {
         setLoading(false);
       }

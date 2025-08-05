@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Form, Input, Button, notification, Card, Typography } from 'antd';
+import { Form, Input, Button, Card, Typography } from 'antd';
+import { useNotification } from '@/src/components/notification/NotificationProvider';
 import { useSession } from 'next-auth/react';
 
 const { Title } = Typography;
@@ -10,7 +11,7 @@ export default function ProfileSettingsPage() {
   const { data: session, status, update } = useSession();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [api, contextHolder] = notification.useNotification();
+  const api = useNotification();
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
@@ -74,7 +75,7 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className="profile-container">
-      {contextHolder}
+      
       <Card className="profile-card" style={{ margin: '0 auto' }}>
         <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Profile Settings</Title>
         <Form
