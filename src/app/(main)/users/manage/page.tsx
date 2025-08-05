@@ -334,7 +334,7 @@ export default function ManageUsersPage() {
       title: 'Section',
       dataIndex: ['section', 'name'],
       key: 'section',
-      render: (text, record) => record.role === 'MANAGER' ? text : 'N/A',
+      render: (text, record) => record.role === 'MANAGER' ? text : '',
       filters: sections.map(section => ({ text: section.name, value: section.id })),
       onFilter: (value, record) => record.sectionId === value,
     },
@@ -394,6 +394,49 @@ export default function ManageUsersPage() {
           confirmLoading={deleteLoading}
         />
       )}
+
+      <Modal
+        title={editingUser ? `Edit User: ${editingUser.username}` : ''}
+        open={isEditModalVisible}
+        onCancel={handleCancelEdit}
+        footer={null}
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={handleUpdateUser}
+        >
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: 'Please input the user\'s email!' },
+              { type: 'email', message: 'Please enter a valid email!' },
+            ]}
+          >
+            <Input />
+          </Form.Item>
+          {editingUser?.role === 'MANAGER' && (
+            <Form.Item
+              label="Section"
+              name="sectionId"
+            >
+              <Select placeholder="Select a section" allowClear>
+                {sections.map((section) => (
+                  <Option key={section.id} value={section.id}>
+                    {section.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              Update User
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Modal
         title={editingSection ? 'Edit Section' : 'Create New Section'}

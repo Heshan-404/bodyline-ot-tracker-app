@@ -16,6 +16,12 @@ export async function GET(req: Request) {
         username: true,
         email: true,
         role: true,
+        sectionId: true,
+        section: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
     return NextResponse.json(users);

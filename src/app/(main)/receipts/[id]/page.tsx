@@ -24,6 +24,7 @@ interface Receipt {
   dgmActionBy?: string | null;
   gmActionBy?: string | null;
   managerActionBy?: string | null;
+  section: { name: string };
 }
 
 export default function ReceiptDetailPage() {
@@ -130,8 +131,10 @@ export default function ReceiptDetailPage() {
     const { status: receiptStatus } = receipt;
 
     switch (role) {
+      case 'MANAGER':
+        return receiptStatus === 'PENDING_MANAGER_APPROVAL';
       case 'DGM':
-        return receiptStatus === 'PENDING_DGM';
+        return receiptStatus === 'APPROVED_BY_MANAGER_PENDING_DGM';
       case 'GM':
         return receiptStatus === 'APPROVED_BY_DGM_PENDING_GM';
       case 'SECURITY':
@@ -179,6 +182,9 @@ export default function ReceiptDetailPage() {
           <Descriptions.Item label="Written By">{receipt.writtenBy.username} ({receipt.writtenBy.role})</Descriptions.Item>
           <Descriptions.Item label="Created At">{new Date(receipt.createdAt).toLocaleString()}</Descriptions.Item>
           <Descriptions.Item label="Last Updated">{new Date(receipt.updatedAt).toLocaleString()}</Descriptions.Item>
+          <Descriptions.Item label="Section">
+            <Tag color="blue">{receipt.section.name}</Tag>
+          </Descriptions.Item>
           {receipt.description && (
             <Descriptions.Item label="Description">{receipt.description}</Descriptions.Item>
           )}
@@ -189,7 +195,11 @@ export default function ReceiptDetailPage() {
           )}
           {receipt.lastActionByRole && (
             <Descriptions.Item label="Last Action By">
-              <Tag color="purple">{receipt.lastActionByRole}</Tag>
+              {receipt.lastActionByRole === 'MANAGER' && receipt.managerActionBy ? (
+                receipt.managerActionBy
+              ) : (
+                receipt.lastActionByRole
+              )}
             </Descriptions.Item>
           )}
           {receipt.rejectionReason && (

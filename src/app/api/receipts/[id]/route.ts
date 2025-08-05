@@ -23,6 +23,7 @@ export async function GET(
       where: { id },
       include: {
         writtenBy: { select: { username: true, role: true } },
+        section: true,
       },
     });
 

@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
                 case 'HR':
                     whereClause.writtenById = userId;
                     break;
+                case 'MANAGER':
+                    whereClause.sectionId = session.user.sectionId;
+                    break;
                 case 'SECURITY':
                     // Security can view all receipts
                     break;
@@ -62,6 +65,11 @@ export async function GET(req: NextRequest) {
             default:
                 return NextResponse.json({message: 'Forbidden'}, {status: 403});
         }
+    }
+
+    // If the user is a manager, filter by their sectionId
+    if (role === 'MANAGER' && session.user.sectionId) {
+        whereClause.sectionId = session.user.sectionId;
     }
 
     console.log(`Fetching receipts for role: ${role}, view: ${view}, whereClause:`, whereClause);
