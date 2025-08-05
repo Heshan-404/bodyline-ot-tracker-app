@@ -64,6 +64,29 @@ export async function PUT(
               html: emailHtml,
             });
           }
+
+          // Notify all GMs
+          const gmUsers = await prisma.user.findMany({
+            where: { role: 'GM' },
+            select: { email: true },
+          });
+          const gmEmails = gmUsers.map((user) => user.email);
+
+          if (gmEmails.length > 0) {
+            console.log('Sending DGM approval email to GMs:', gmEmails);
+            const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${receipt.id}`;
+            const emailHtml = `
+              <p>A receipt titled "<strong>${receipt.title}</strong>" has been approved by a DGM and is now pending your approval.</p>
+              <p>Description: ${receipt.description || 'N/A'}</p>
+              <p>You can view the details here: <a href="${receiptLink}">${receiptLink}</a></p>
+              <p>Thank you.</p>
+            `;
+            await sendEmail({
+              to: gmEmails,
+              subject: `Receipt Pending GM Approval: ${receipt.title}`,
+              html: emailHtml,
+            });
+          }
         } else if (action === 'reject') {
           newStatus = 'REJECTED_BY_DGM';
           newCurrentApproverRole = null;
