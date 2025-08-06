@@ -101,15 +101,26 @@ export default function GMDashboardPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
+        let displayStatus = status.replace(/_/g, ' ');
         let color = '#ee232b'; // Default to primary red
-        if (status === 'PENDING') {
-          color = '#faad14'; // Orange for pending
-        } else if (status === 'APPROVED') {
-          color = '#52c41a'; // Green for approved
-        } else if (status === 'REJECTED') {
-          color = '#ee232b'; // Red for rejected
+
+        if (status.includes('_PENDING_')) {
+          const parts = status.split('_PENDING_');
+          if (parts.length > 1) {
+            displayStatus = 'PENDING ' + parts[1].replace(/_/g, ' ');
+          }
+        } else if (status === 'PENDING') { // Handle generic PENDING status if it exists
+          displayStatus = 'PENDING';
         }
-        return <Tag color={color}>{status.toUpperCase()}</Tag>;
+
+        if (status.includes('REJECTED')) {
+          color = '#ee232b'; // Red for rejected
+        } else if (status.includes('APPROVED')) {
+          color = '#52c41a'; // Green for approved
+        } else {
+          color = '#faad14'; // Orange for pending/other statuses
+        }
+        return <Tag color={color}>{displayStatus}</Tag>;
       },
     },
     {
@@ -184,7 +195,7 @@ export default function GMDashboardPage() {
         columns={columns}
         dataSource={receipts}
         rowKey="id"
-        pagination={{ pageSize }}
+        pagination={{ pageSize, style: { justifyContent: 'center', display: 'flex' } }}
         scroll={{ x: 'max-content' }}
         locale={{ emptyText: <Empty description="No pending receipts for GM." /> }}
       />

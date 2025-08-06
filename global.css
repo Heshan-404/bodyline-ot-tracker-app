@@ -73,6 +73,18 @@ html, body {
     }
 }
 
+/* Center table pagination */
+.ant-table-pagination {
+  justify-content: center;
+  display: flex;
+  margin-top: 16px; /* Add some space above pagination */
+}
+
+.ant-pagination {
+  justify-content: center;
+  display: flex;
+}
+
 /* Desktop width for profile card */
 .profile-card {
     width: 400px;

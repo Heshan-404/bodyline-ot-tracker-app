@@ -138,7 +138,18 @@ export default function ReceiptsHistoryPage() {
             ],
             onFilter: (value, record) => record.status.indexOf(value as string) === 0,
             render: (status: string) => {
+                let displayStatus = status.replace(/_/g, ' ');
                 let color = '#ee232b'; // Default to primary red
+
+                if (status.includes('_PENDING_')) {
+                    const parts = status.split('_PENDING_');
+                    if (parts.length > 1) {
+                        displayStatus = 'PENDING ' + parts[1].replace(/_/g, ' ');
+                    }
+                } else if (status === 'PENDING_MANAGER_APPROVAL') {
+                    displayStatus = 'PENDING MANAGER APPROVAL';
+                }
+
                 if (status.includes('REJECTED')) {
                     color = '#ee232b'; // Red for rejected
                 } else if (status.includes('APPROVED')) {
@@ -146,7 +157,7 @@ export default function ReceiptsHistoryPage() {
                 } else {
                     color = '#faad14'; // Orange for pending/other statuses
                 }
-                return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
+                return <Tag color={color}>{displayStatus}</Tag>;
             },
         },
         {
@@ -274,7 +285,7 @@ export default function ReceiptsHistoryPage() {
         <div className="receipts-history-container">
             <Title level={2} style={{ marginBottom: '24px' }}>Receipts History</Title>
             <Table columns={session?.user.role === 'HR' ? hrColumns : columns} dataSource={receipts} rowKey="id"
-                   pagination={{pageSize}} scroll={{x: 'max-content'}}
+                   pagination={{pageSize, style: { justifyContent: 'center', display: 'flex' }}} scroll={{x: 'max-content'}}
                    locale={{ emptyText: <Empty description="No history found." /> }}
             />
         </div>

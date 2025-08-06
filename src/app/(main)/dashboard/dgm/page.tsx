@@ -114,7 +114,16 @@ export default function DGMDashboardPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
+        let displayStatus = status.replace(/_/g, ' ');
         let color = '#ee232b'; // Default to primary red
+
+        if (status.includes('_PENDING_')) {
+          const parts = status.split('_PENDING_');
+          if (parts.length > 1) {
+            displayStatus = 'PENDING ' + parts[1].replace(/_/g, ' ');
+          }
+        }
+
         if (status.includes('REJECTED')) {
           color = '#ee232b'; // Red for rejected
         } else if (status.includes('APPROVED')) {
@@ -122,7 +131,7 @@ export default function DGMDashboardPage() {
         } else {
           color = '#faad14'; // Orange for pending/other statuses
         }
-        return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
+        return <Tag color={color}>{displayStatus}</Tag>;
       },
       filters: [
         { text: 'Approved by Manager (Pending DGM)', value: 'APPROVED_BY_MANAGER_PENDING_DGM' },
@@ -199,7 +208,7 @@ export default function DGMDashboardPage() {
         columns={columns}
         dataSource={receipts}
         rowKey="id"
-        pagination={{ pageSize }}
+        pagination={{ pageSize, style: { justifyContent: 'center', display: 'flex' } }}
         scroll={{ x: 'max-content' }}
         locale={{ emptyText: <Empty description="No pending receipts for DGM." /> }}
       />

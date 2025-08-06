@@ -109,7 +109,6 @@ export default function RootLayout({
                   </Content>
                   {!isMobile && (
                     <Footer style={{ textAlign: 'center' }}>
-                      Receipt Tracker System ©2023 Created by Gemini
                     </Footer>
                   )}
                 </Layout>

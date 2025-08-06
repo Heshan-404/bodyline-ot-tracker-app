@@ -194,7 +194,7 @@ export default function ReceiptDetailPage() {
           <Descriptions.Item label="Created At">{new Date(receipt.createdAt).toLocaleString()}</Descriptions.Item>
           <Descriptions.Item label="Last Updated">{new Date(receipt.updatedAt).toLocaleString()}</Descriptions.Item>
           <Descriptions.Item label="Section">
-            <Tag color="blue">{receipt.section.name}</Tag>
+            <Tag color={receipt.section.name === 'Cutting' ? 'blue' : 'purple'}>{receipt.section.name}</Tag>
           </Descriptions.Item>
           {receipt.description && (
             <Descriptions.Item label="Description">{receipt.description}</Descriptions.Item>

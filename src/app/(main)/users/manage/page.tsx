@@ -382,7 +382,7 @@ export default function ManageUsersPage() {
         </Button>
       )}
       
-      <Table columns={userColumns} dataSource={users} rowKey="id" pagination={{ pageSize }} scroll={{ x: 'max-content' }} />
+      <Table columns={userColumns} dataSource={users} rowKey="id" pagination={{ pageSize, style: { justifyContent: 'center', display: 'flex' } }} scroll={{ x: 'max-content' }} />
 
 
 
