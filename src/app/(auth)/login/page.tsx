@@ -46,10 +46,9 @@ function LoginPageContent() {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: '#f0f2f5' }}>
-      
-      <Card style={{ width: 400, textAlign: 'center' }}>
-        <Title level={2}>Login</Title>
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#000000' }}>
+      <Card className="login-card" style={{ width: 400, textAlign: 'center' }}>
+        <Title level={2} style={{ marginBottom: '24px' }}>Login</Title>
         <Form
           name="login"
           initialValues={{ remember: true }}

@@ -33,7 +33,15 @@ export async function GET(req: Request) {
   }
 }
 
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/src/lib/auth';
+
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || session.user.role !== 'HR') {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { username, password, role, email, sectionId } = await request.json();
 

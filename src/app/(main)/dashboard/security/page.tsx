@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Table, Tag, Spin, Typography, Button, Space } from 'antd';
+import { Table, Tag, Typography, Button, Space, Empty } from 'antd';
 import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
@@ -26,6 +26,7 @@ interface Receipt {
   dgmActionBy?: string | null;
   managerActionBy?: string | null;
   gmActionBy?: string | null;
+  createdBy?: { username: string; role: string }; // Add createdBy
 }
 
 export default function SecurityDashboardPage() {
@@ -85,17 +86,22 @@ export default function SecurityDashboardPage() {
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => <Link href={`/receipts/${record.id}`}>{text}</Link>,
+      sorter: (a, b) => a.title.localeCompare(b.title),
+      filters: Array.from(new Set(receipts.map(r => r.title))).map(title => ({ text: title, value: title })),
+      onFilter: (value, record) => record.title.indexOf(value as string) === 0,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
-        let color = 'geekblue';
+        let color = '#ee232b'; // Default to primary red
         if (status.includes('REJECTED')) {
-          color = 'volcano';
+          color = '#ee232b'; // Red for rejected
         } else if (status.includes('APPROVED')) {
-          color = 'green';
+          color = '#52c41a'; // Green for approved
+        } else {
+          color = '#faad14'; // Orange for pending/other statuses
         }
         return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
       },
@@ -104,6 +110,18 @@ export default function SecurityDashboardPage() {
       title: 'Written By',
       dataIndex: ['writtenBy', 'username'],
       key: 'writtenBy',
+      filters: Array.from(new Set(receipts.map(r => r.writtenBy.username).filter(Boolean))).map(user => ({ text: user, value: user as string })),
+      onFilter: (value, record) => record.writtenBy.username.indexOf(value as string) === 0,
+      sorter: (a, b) => a.writtenBy.username.localeCompare(b.writtenBy.username),
+    },
+    {
+      title: 'Created By HR',
+      dataIndex: ['createdBy', 'username'],
+      key: 'createdBy',
+      render: (text) => text || 'N/A',
+      filters: Array.from(new Set(receipts.map(r => r.createdBy?.username).filter(Boolean))).map(user => ({ text: user, value: user as string })),
+      onFilter: (value, record) => record.createdBy?.username.indexOf(value as string) === 0,
+      sorter: (a, b) => (a.createdBy?.username || '').localeCompare(b.createdBy?.username || ''),
     },
     {
       title: 'Created At',
@@ -116,11 +134,17 @@ export default function SecurityDashboardPage() {
       title: 'DGM Action By',
       dataIndex: 'dgmActionBy',
       key: 'dgmActionBy',
+      filters: Array.from(new Set(receipts.map(r => r.dgmActionBy).filter(Boolean))).map(user => ({ text: user, value: user as string })),
+      onFilter: (value, record) => record.dgmActionBy?.indexOf(value as string) === 0,
+      sorter: (a, b) => (a.dgmActionBy || '').localeCompare(b.dgmActionBy || ''),
     },
     {
       title: 'GM Action By',
       dataIndex: 'gmActionBy',
       key: 'gmActionBy',
+      filters: Array.from(new Set(receipts.map(r => r.gmActionBy).filter(Boolean))).map(user => ({ text: user, value: user as string })),
+      onFilter: (value, record) => record.gmActionBy?.indexOf(value as string) === 0,
+      sorter: (a, b) => (a.gmActionBy || '').localeCompare(b.gmActionBy || ''),
     },
     {
       title: 'Action',
@@ -137,8 +161,16 @@ export default function SecurityDashboardPage() {
 
   if (loading || status === 'loading') {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-        <Spin size="large" />
+      <div style={{ padding: '24px' }}>
+        <Title level={2} style={{ marginBottom: '24px' }}>Security Dashboard - Approved Receipts</Title>
+        <Table
+          columns={columns}
+          dataSource={[]}
+          loading={true}
+          rowKey="id"
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+        />
       </div>
     );
   }
@@ -151,13 +183,14 @@ export default function SecurityDashboardPage() {
   return (
     <div style={{ padding: '24px' }}>
       
-      <Title level={2}>Security Dashboard - Approved Receipts</Title>
+      <Title level={2} style={{ marginBottom: '24px' }}>Security Dashboard - Approved Receipts</Title>
       <Table
         columns={columns}
         dataSource={receipts}
         rowKey="id"
         pagination={{ pageSize }}
         scroll={{ x: 'max-content' }}
+        locale={{ emptyText: <Empty description="No approved receipts for Security." /> }}
       />
     </div>
   );

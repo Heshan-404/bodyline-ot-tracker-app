@@ -5,7 +5,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: "HR" | "MANAGER" | "DGM" | "GM" | "SECURITY";
+      role: "HR" | "MANAGER" | "DGM" | "GM" | "SECURITY" | "REQUESTER";
       name?: string | null;
       sectionId?: string | null; // Allow sectionId to be null
     } & DefaultSession["user"];
@@ -19,7 +19,7 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
-    role: "HR" | "MANAGER" | "DGM" | "GM" | "SECURITY";
+    role: "HR" | "MANAGER" | "DGM" | "GM" | "SECURITY" | "REQUESTER";
     sectionId?: string | null; // Allow sectionId to be null
   }
 }

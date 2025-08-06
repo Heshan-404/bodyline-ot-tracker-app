@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { Table, Spin, Typography, Button, Modal, Select, Form, Input, Space } from 'antd';
 import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
-import { DeleteOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import ConfirmationModal from '@/src/components/ConfirmationModal';
 
@@ -85,15 +85,15 @@ export default function ManageUsersPage() {
   }, [height]);
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'HR') {
-      fetchUsers();
-    } else if (status === 'unauthenticated') {
-      api.error({
-        message: 'Authorization Error',
-        description: 'You are not authorized to view this page.',
-      });
+    if (status === 'loading') return;
+
+    if (status === 'unauthenticated' || session?.user?.role !== 'HR') {
+      router.push('/dashboard'); // Redirect to dashboard or login if not HR
+      return;
     }
-  }, [session, status, api]);
+
+    fetchUsers();
+  }, [session, status, api, router]);
 
   const fetchUsers = async (filter?: string) => {
     try {
@@ -327,6 +327,7 @@ export default function ManageUsersPage() {
         { text: 'DGM', value: 'DGM' },
         { text: 'GM', value: 'GM' },
         { text: 'SECURITY', value: 'SECURITY' },
+        { text: 'REQUESTER', value: 'REQUESTER' },
       ],
       onFilter: (value, record) => record.role.indexOf(value as string) === 0,
     },
@@ -373,12 +374,13 @@ export default function ManageUsersPage() {
   }
 
   return (
-    <div className="manage-users-container" style={{ padding: '24px' }}>
-      
-      <Title level={2}>User Management</Title>
-      <Button type="primary" onClick={showManageSectionsTableModal} style={{ marginBottom: 16 }}>
-        Manage Sections
-      </Button>
+    <div className="manage-users-container">
+      <Title level={2} style={{ marginBottom: '24px' }}>User Management</Title>
+      {session?.user?.role === 'HR' && (
+        <Button type="primary" onClick={showManageSectionsTableModal} style={{ marginBottom: 16 }}>
+          Manage Sections
+        </Button>
+      )}
       
       <Table columns={userColumns} dataSource={users} rowKey="id" pagination={{ pageSize }} scroll={{ x: 'max-content' }} />
 

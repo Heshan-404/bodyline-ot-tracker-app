@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
         // Default dashboard view (pending receipts)
         switch (role) {
             case 'HR':
+                // HR can view all receipts by default
+                break;
+            case 'REQUESTER':
                 whereClause.writtenById = userId;
                 break;
             case 'MANAGER':
@@ -78,6 +81,7 @@ export async function GET(req: NextRequest) {
             where: whereClause,
             include: {
                 writtenBy: {select: {username: true, role: true}},
+                createdBy: {select: {username: true, role: true}}, // Include the HR creator
             },
             orderBy: {
                 createdAt: 'desc',
@@ -108,20 +112,13 @@ export async function POST(req: NextRequest) {
         const description = formData.get('description') as string;
         const imageFile = formData.get('image') as File;
         const sectionId = formData.get('sectionId') as string;
-        console.log(title)
-        console.log(title)
-        console.log(imageFile)
-        console.log(sectionId)
-        if (!title || !imageFile || !sectionId) {
+        const writtenById = formData.get('writtenById') as string; // New: Get writtenById from form data
+
+        if (!title || !imageFile || !sectionId || !writtenById) {
             return NextResponse.json(
-                {message: 'Missing required fields: title, image, or section'},
+                {message: 'Missing required fields: title, image, section, or writtenById'},
                 {status: 400}
             );
-        }
-
-        console.log('Checking session.user.id:', session?.user?.id);
-        if (!session.user || !session.user.id) {
-            return NextResponse.json({message: 'User not authenticated'}, {status: 401});
         }
 
         const imageUrl = await uploadImageToBlob(imageFile.name, imageFile);
@@ -131,13 +128,35 @@ export async function POST(req: NextRequest) {
                 title,
                 description,
                 imageUrl,
-                writtenById: session.user.id,
+                writtenById: writtenById, // Use the provided writtenById
+                createdById: session.user.id, // Store the HR user who created it
                 sectionId,
                 status: 'PENDING_MANAGER_APPROVAL',
                 currentApproverRole: 'MANAGER',
             },
         });
-        console.log(newReceipt)
+
+        // Send email to the Requester (writtenBy user)
+        const requester = await prisma.user.findUnique({
+            where: { id: writtenById },
+            select: { email: true, username: true },
+        });
+
+        if (requester?.email) {
+            console.log('Sending new receipt confirmation email to requester:', requester.email);
+            const receiptLink = `${process.env.NEXTAUTH_URL}/receipts/${newReceipt.id}`;
+            const emailHtml = newReceiptTemplate({
+                title: newReceipt.title,
+                description: newReceipt.description || '',
+                receiptLink,
+            });
+            await sendEmail({
+                to: requester.email,
+                subject: `Your Receipt Has Been Submitted: ${newReceipt.title}`,
+                html: emailHtml,
+            });
+        }
+
         // Send email to all Managers in the selected section
         const managersInSection = await prisma.user.findMany({
             where: {role: 'MANAGER', sectionId: sectionId},

@@ -18,35 +18,45 @@ export default function CreateReceiptPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [sections, setSections] = useState<{ id: string; name: string }[]>([]);
+  const [requesters, setRequesters] = useState<{ id: string; username: string }[]>([]); // New state for requesters
   const notification = useNotification();
 
   useEffect(() => {
-    const fetchSections = async () => {
+    if (status === 'loading') return;
+
+    if (status === 'unauthenticated' || session?.user?.role !== 'HR') {
+      router.push('/dashboard'); // Redirect to dashboard or login if not HR
+      return;
+    }
+
+    const fetchSectionsAndRequesters = async () => {
       try {
-        const res = await fetch('/api/sections');
-        if (!res.ok) {
+        const [sectionsRes, requestersRes] = await Promise.all([
+          fetch('/api/sections'),
+          fetch('/api/users?role=REQUESTER'), // Fetch users with REQUESTER role
+        ]);
+
+        if (!sectionsRes.ok) {
           throw new Error('Failed to fetch sections');
         }
-        const data = await res.json();
-        setSections(data);
+        if (!requestersRes.ok) {
+          throw new Error('Failed to fetch requesters');
+        }
+
+        const sectionsData = await sectionsRes.json();
+        const requestersData = await requestersRes.json();
+
+        setSections(sectionsData);
+        setRequesters(requestersData);
       } catch (error: any) {
         notification.error({
-          message: 'Error fetching sections',
+          message: 'Error fetching data',
           description: error.message,
         });
       }
     };
-    fetchSections();
-  }, []);
-
-  if (status === 'loading') {
-    return <div>Loading...</div>;
-  }
-
-  if (status === 'unauthenticated' || session?.user?.role !== 'HR') {
-    router.push('/login');
-    return null;
-  }
+    fetchSectionsAndRequesters();
+  }, [session, status, router, notification]);
 
   const onFinish = async (values: any) => {
     setLoading(true);
@@ -54,6 +64,7 @@ export default function CreateReceiptPage() {
       const formData = new FormData();
       formData.append('title', values.title);
       formData.append('sectionId', values.sectionId);
+      formData.append('writtenById', values.writtenById); // Add writtenById
       formData.append('description', values.description || '');
       if (fileList.length > 0) {
         formData.append('image', fileList[0].originFileObj as File);
@@ -100,9 +111,9 @@ export default function CreateReceiptPage() {
   };
 
   return (
-    <div className="create-receipt-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+    <div className="create-receipt-container">
       <Card className="create-receipt-card" style={{ width: 800 }}>
-        <Title level={2} style={{ textAlign: 'center' }}>Create New Receipt</Title>
+        <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Create New Receipt</Title>
         <Form
           form={form}
           layout="vertical"
@@ -115,6 +126,28 @@ export default function CreateReceiptPage() {
             rules={[{ required: true, message: 'Please input the title!' }]}
           >
             <Input />
+          </Form.Item>
+
+          <Form.Item
+            label="Requester"
+            name="writtenById"
+            rules={[{ required: true, message: 'Please select a requester!' }]}
+          >
+            <Select
+              placeholder="Select a requester"
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const childrenText = String(option?.children || '');
+                return childrenText.toLowerCase().includes(input.toLowerCase());
+              }}
+            >
+              {requesters.map((requester) => (
+                <Option key={requester.id} value={requester.id}>
+                  {requester.username}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
 
           <Form.Item

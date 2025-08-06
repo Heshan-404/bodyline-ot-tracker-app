@@ -75,8 +75,7 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className="profile-container">
-      
-      <Card className="profile-card" style={{ margin: '0 auto' }}>
+      <Card className="profile-card">
         <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Profile Settings</Title>
         <Form
           form={form}

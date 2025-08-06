@@ -14,6 +14,7 @@ model User {
   passwordHash String
   role         UserRole
   receipts     Receipt[] @relation("WrittenBy")
+  createdReceipts Receipt[] @relation("CreatedBy")
   sectionId    String?
   section      Section?  @relation("ManagerSection", fields: [sectionId], references: [id])
 }
@@ -44,6 +45,8 @@ model Receipt {
   writtenBy           User          @relation("WrittenBy", fields: [writtenById], references: [id])
   sectionId           String
   section             Section       @relation("ReceiptSection", fields: [sectionId], references: [id])
+  createdById         String?
+  createdBy           User?         @relation("CreatedBy", fields: [createdById], references: [id])
 }
 
 enum UserRole {
@@ -52,6 +55,7 @@ enum UserRole {
   DGM
   GM
   SECURITY
+  REQUESTER
 }
 
 enum ReceiptStatus {

@@ -2,7 +2,7 @@
 
 import {useEffect, useState, useCallback} from 'react';
 import {useSession} from 'next-auth/react';
-import {Table, Tag, Spin, Typography, Button, Space} from 'antd';
+import {Table, Tag, Typography, Button, Space, Empty} from 'antd';
 import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type {ColumnsType} from 'antd/es/table';
 import Link from 'next/link';
@@ -26,6 +26,7 @@ interface Receipt {
     dgmActionBy?: string | null;
     gmActionBy?: string | null;
     managerActionBy?: string | null;
+    createdBy?: { username: string; role: string }; // Add createdBy
 }
 
 export default function ReceiptsHistoryPage() {
@@ -117,6 +118,9 @@ export default function ReceiptsHistoryPage() {
             dataIndex: 'title',
             key: 'title',
             render: (text, record) => <Link href={`/history/${record.id}`}>{text}</Link>,
+            sorter: (a, b) => a.title.localeCompare(b.title),
+            filters: Array.from(new Set(receipts.map(r => r.title))).map(title => ({ text: title, value: title })),
+            onFilter: (value, record) => record.title.indexOf(value as string) === 0,
         },
         {
             title: 'Status',
@@ -134,11 +138,13 @@ export default function ReceiptsHistoryPage() {
             ],
             onFilter: (value, record) => record.status.indexOf(value as string) === 0,
             render: (status: string) => {
-                let color = 'geekblue';
+                let color = '#ee232b'; // Default to primary red
                 if (status.includes('REJECTED')) {
-                    color = 'volcano';
+                    color = '#ee232b'; // Red for rejected
                 } else if (status.includes('APPROVED')) {
-                    color = 'green';
+                    color = '#52c41a'; // Green for approved
+                } else {
+                    color = '#faad14'; // Orange for pending/other statuses
                 }
                 return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
             },
@@ -152,6 +158,16 @@ export default function ReceiptsHistoryPage() {
                 value: user as string
             })),
             onFilter: (value, record) => record.writtenBy.username.indexOf(value as string) === 0,
+            sorter: (a, b) => a.writtenBy.username.localeCompare(b.writtenBy.username),
+        },
+        {
+            title: 'Created By HR',
+            dataIndex: ['createdBy', 'username'],
+            key: 'createdBy',
+            render: (text) => text || 'N/A',
+            filters: Array.from(new Set(receipts.map(r => r.createdBy?.username).filter(Boolean))).map(user => ({ text: user, value: user as string })),
+            onFilter: (value, record) => record.createdBy?.username.indexOf(value as string) === 0,
+            sorter: (a, b) => (a.createdBy?.username || '').localeCompare(b.createdBy?.username || ''),
         },
         {
             title: 'DGM Action By',
@@ -162,6 +178,7 @@ export default function ReceiptsHistoryPage() {
                 value: user as string
             })),
             onFilter: (value, record) => record.dgmActionBy?.indexOf(value as string) === 0,
+            sorter: (a, b) => (a.dgmActionBy || '').localeCompare(b.dgmActionBy || ''),
         },
         {
             title: 'GM Action By',
@@ -172,6 +189,7 @@ export default function ReceiptsHistoryPage() {
                 value: user as string
             })),
             onFilter: (value, record) => record.gmActionBy?.indexOf(value as string) === 0,
+            sorter: (a, b) => (a.gmActionBy || '').localeCompare(b.gmActionBy || ''),
         },
         {
             title: 'Manager Action By',
@@ -182,6 +200,7 @@ export default function ReceiptsHistoryPage() {
                 value: user as string
             })),
             onFilter: (value, record) => record.managerActionBy?.indexOf(value as string) === 0,
+            sorter: (a, b) => (a.managerActionBy || '').localeCompare(b.managerActionBy || ''),
         },
         {
             title: 'Rejection Reason',
@@ -193,6 +212,7 @@ export default function ReceiptsHistoryPage() {
             })),
             onFilter: (value, record) => record.rejectionReason?.indexOf(value as string) === 0,
             render: (text) => text || 'N/A',
+            sorter: (a, b) => (a.rejectionReason || '').localeCompare(b.rejectionReason || ''),
         },
         {
             title: 'Created At',
@@ -234,8 +254,16 @@ export default function ReceiptsHistoryPage() {
 
     if (loading || status === 'loading') {
         return (
-            <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh'}}>
-                <Spin size="large"/>
+            <div style={{ padding: '24px' }}>
+                <Title level={2} style={{ marginBottom: '24px' }}>Receipts History</Title>
+                <Table
+                    columns={columns}
+                    dataSource={[]}
+                    loading={true}
+                    rowKey="id"
+                    pagination={false}
+                    scroll={{ x: 'max-content' }}
+                />
             </div>
         );
     }
@@ -244,9 +272,11 @@ export default function ReceiptsHistoryPage() {
 
     return (
         <div className="receipts-history-container">
-            <Title level={2}>Receipts History</Title>
+            <Title level={2} style={{ marginBottom: '24px' }}>Receipts History</Title>
             <Table columns={session?.user.role === 'HR' ? hrColumns : columns} dataSource={receipts} rowKey="id"
-                   pagination={{pageSize}} scroll={{x: 'max-content'}}/>
+                   pagination={{pageSize}} scroll={{x: 'max-content'}}
+                   locale={{ emptyText: <Empty description="No history found." /> }}
+            />
         </div>
     );
 }
