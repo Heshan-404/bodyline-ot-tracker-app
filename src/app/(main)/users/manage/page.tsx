@@ -85,15 +85,15 @@ export default function ManageUsersPage() {
   }, [height]);
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'HR') {
-      fetchUsers();
-    } else if (status === 'unauthenticated') {
-      api.error({
-        message: 'Authorization Error',
-        description: 'You are not authorized to view this page.',
-      });
+    if (status === 'loading') return;
+
+    if (status === 'unauthenticated' || session?.user?.role !== 'HR') {
+      router.push('/dashboard'); // Redirect to dashboard or login if not HR
+      return;
     }
-  }, [session, status, api]);
+
+    fetchUsers();
+  }, [session, status, api, router]);
 
   const fetchUsers = async (filter?: string) => {
     try {
@@ -327,6 +327,7 @@ export default function ManageUsersPage() {
         { text: 'DGM', value: 'DGM' },
         { text: 'GM', value: 'GM' },
         { text: 'SECURITY', value: 'SECURITY' },
+        { text: 'REQUESTER', value: 'REQUESTER' },
       ],
       onFilter: (value, record) => record.role.indexOf(value as string) === 0,
     },

@@ -37,14 +37,14 @@ export default function Sidebar({ collapsed, setCollapsed }: { collapsed: boolea
     session?.user?.role ? {
       key: `/dashboard/${session.user.role.toLowerCase()}`,
       icon: <DashboardOutlined />,
-      label: <Link href={`/dashboard/${session.user.role.toLowerCase()}`}>Dashboard</Link>,
+      label: session.user.role === 'REQUESTER' ? <Link href={`/dashboard/requester`}>My Receipts</Link> : <Link href={`/dashboard/${session.user.role.toLowerCase()}`}>Dashboard</Link>,
     } : null,
     session?.user?.role === 'HR' ? {
       key: '/receipts/create',
       icon: <FileTextOutlined />,
       label: <Link href="/receipts/create">Create Receipt</Link>,
     } : null,
-    (session?.user?.role === 'DGM' || session?.user?.role === 'GM' || session?.user?.role === 'MANAGER') ? {
+    (session?.user?.role === 'DGM' || session?.user?.role === 'GM' || session?.user?.role === 'MANAGER' || session?.user?.role === 'REQUESTER') ? {
       key: '/history',
       icon: <HistoryOutlined />,
       label: <Link href="/history">History</Link>,

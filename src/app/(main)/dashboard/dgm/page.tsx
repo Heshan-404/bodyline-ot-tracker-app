@@ -25,6 +25,7 @@ interface Receipt {
   rejectionReason?: string | null;
   dgmActionBy?: string | null;
   gmActionBy?: string | null;
+  createdBy?: { username: string; role: string }; // Add createdBy
 }
 
 export default function DGMDashboardPage() {
@@ -104,6 +105,9 @@ export default function DGMDashboardPage() {
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => <Link href={`/receipts/${record.id}`}>{text}</Link>,
+      sorter: (a, b) => a.title.localeCompare(b.title),
+      filters: Array.from(new Set(receipts.map(r => r.title))).map(title => ({ text: title, value: title })),
+      onFilter: (value, record) => record.title.indexOf(value as string) === 0,
     },
     {
       title: 'Status',
@@ -132,6 +136,16 @@ export default function DGMDashboardPage() {
       key: 'writtenBy',
       filters: users.map((user) => ({ text: user.username, value: user.username })),
       onFilter: (value, record) => record.writtenBy.username.indexOf(value as string) === 0,
+      sorter: (a, b) => a.writtenBy.username.localeCompare(b.writtenBy.username),
+    },
+    {
+      title: 'Created By HR',
+      dataIndex: ['createdBy', 'username'],
+      key: 'createdBy',
+      render: (text) => text || 'N/A',
+      filters: users.map((user) => ({ text: user.username, value: user.username })),
+      onFilter: (value, record) => record.createdBy?.username.indexOf(value as string) === 0,
+      sorter: (a, b) => (a.createdBy?.username || '').localeCompare(b.createdBy?.username || ''),
     },
     {
       title: 'Created At',

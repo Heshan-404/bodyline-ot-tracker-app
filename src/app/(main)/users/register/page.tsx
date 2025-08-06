@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, Select } from 'antd';
 import { useNotification } from '@/src/components/notification/NotificationProvider';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -15,8 +16,15 @@ export default function RegisterUserPage() {
   const router = useRouter();
   const [sections, setSections] = useState<{ id: string; name: string }[]>([]);
   const [selectedRole, setSelectedRole] = useState<string | undefined>(undefined);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
+    if (status === 'loading') return;
+
+    if (status === 'unauthenticated' || session?.user?.role !== 'HR') {
+      router.push('/dashboard'); // Redirect to dashboard or login if not HR
+    }
+
     const fetchSections = async () => {
       try {
         const res = await fetch('/api/sections');
@@ -33,7 +41,7 @@ export default function RegisterUserPage() {
       }
     };
     fetchSections();
-  }, []);
+  }, [session, status, router, api]);
 
   const handleRoleChange = (value: string) => {
     setSelectedRole(value);
@@ -140,6 +148,7 @@ export default function RegisterUserPage() {
               <Option value="DGM">DGM</Option>
               <Option value="GM">GM</Option>
               <Option value="SECURITY">SECURITY</Option>
+              <Option value="REQUESTER">Requester</Option>
             </Select>
           </Form.Item>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, Descriptions, Image, Spin, Typography, Tag, Button, Modal, Form, Input } from 'antd';
 import { useNotification } from '@/src/components/notification/NotificationProvider';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
@@ -24,6 +24,7 @@ interface Receipt {
   dgmActionBy?: string | null;
   gmActionBy?: string | null;
   managerActionBy?: string | null;
+  createdBy?: { username: string; role: string }; // Add createdBy
   section: { name: string };
 }
 
@@ -126,6 +127,7 @@ export default function ReceiptDetailPage() {
 
   const canApproveOrReject = () => {
     if (!session?.user?.role || !receipt) return false;
+    if (session.user.role === 'REQUESTER') return false; // Requesters cannot approve or reject
 
     const { role } = session.user;
     const { status: receiptStatus } = receipt;
@@ -180,6 +182,9 @@ export default function ReceiptDetailPage() {
             <Tag color="blue">{receipt.status.replace(/_/g, ' ')}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Written By">{receipt.writtenBy.username} ({receipt.writtenBy.role})</Descriptions.Item>
+          {receipt.createdBy && (
+            <Descriptions.Item label="Created By HR">{receipt.createdBy.username}</Descriptions.Item>
+          )}
           <Descriptions.Item label="Created At">{new Date(receipt.createdAt).toLocaleString()}</Descriptions.Item>
           <Descriptions.Item label="Last Updated">{new Date(receipt.updatedAt).toLocaleString()}</Descriptions.Item>
           <Descriptions.Item label="Section">
@@ -212,11 +217,20 @@ export default function ReceiptDetailPage() {
             <Descriptions.Item label="GM Action By">{receipt.gmActionBy}</Descriptions.Item>
           )}
           <Descriptions.Item label="Image">
-            <Image
-              src={receipt.imageUrl}
-              alt={receipt.title}
-              style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain' }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <Image
+                src={receipt.imageUrl}
+                alt={receipt.title}
+                style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain', marginBottom: '16px' }}
+              />
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={() => window.open(receipt.imageUrl, '_blank')}
+              >
+                Download Image
+              </Button>
+            </div>
           </Descriptions.Item>
         </Descriptions>
         {canApproveOrReject() && (

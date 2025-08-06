@@ -1,4 +1,4 @@
-import NextAuth, { AuthOptions } from "next-auth";
+import NextAuth, { AuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "./prisma";
 import bcrypt from "bcryptjs";
@@ -38,7 +38,7 @@ export const authOptions: AuthOptions = {
           name: user.username,
           role: user.role,
           sectionId: user.sectionId,
-        };
+        } as User; // Explicitly cast to User type
       },
     }),
   ],

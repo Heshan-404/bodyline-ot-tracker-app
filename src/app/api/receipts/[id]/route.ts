@@ -23,6 +23,7 @@ export async function GET(
       where: { id },
       include: {
         writtenBy: { select: { username: true, role: true } },
+        createdBy: { select: { username: true, role: true } }, // Include the HR creator
         section: true,
       },
     });
@@ -33,15 +34,7 @@ export async function GET(
 
     const { role, id: userId } = session.user;
 
-    if (
-        role === 'HR' &&
-        receipt.writtenById !== userId &&
-        receipt.status !== 'APPROVED_FINAL' &&
-        receipt.status !== 'REJECTED_BY_DGM' &&
-        receipt.status !== 'REJECTED_BY_GM' &&
-        receipt.status !== 'PENDING_MANAGER_APPROVAL' &&
-        receipt.status !== 'REJECTED_BY_MANAGER'
-    ) {
+    if (role === 'REQUESTER' && receipt.writtenById !== userId) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
 

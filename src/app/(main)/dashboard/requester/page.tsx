@@ -1,16 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { Table, Tag, Spin, Typography, Button, Space } from 'antd';
 import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import { EyeOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 
 const { Title } = Typography;
-
 
 interface Receipt {
   id: string;
@@ -26,16 +25,17 @@ interface Receipt {
   rejectionReason?: string | null;
   dgmActionBy?: string | null;
   gmActionBy?: string | null;
+  managerActionBy?: string | null;
   createdBy?: { username: string; role: string }; // Add createdBy
 }
 
-export default function GMDashboardPage() {
+export default function RequesterDashboardPage() {
   const { data: session, status } = useSession();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
+  const api = useNotification();
   const router = useRouter();
   const [pageSize, setPageSize] = useState(10);
-  const api = useNotification();
 
   useEffect(() => {
     const calculatePageSize = () => {
@@ -49,31 +49,26 @@ export default function GMDashboardPage() {
     return () => window.removeEventListener('resize', calculatePageSize);
   }, []);
 
-  const [users, setUsers] = useState<{ id: string; username: string; role: string }[]>([]);
-
-
-
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'GM') {
+    if (status === 'authenticated' && session?.user?.role === 'REQUESTER') {
       fetchReceipts();
     } else if (status === 'unauthenticated') {
-      api.error({
-        message: 'Authorization Error',
-        description: 'You are not authorized to view this page.',
-      });
+      router.push('/login');
+    } else if (status === 'authenticated' && session?.user?.role !== 'REQUESTER') {
+      router.push(`/dashboard/${session.user.role.toLowerCase()}`);
     }
-  }, [session, status]);
+  }, [session, status, api, router]);
 
   const fetchReceipts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/receipts?status=APPROVED_BY_DGM_PENDING_GM');
+      // The API route for receipts (GET /api/receipts) will automatically filter by writtenById for Requesters
+      const res = await fetch('/api/receipts');
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to fetch receipts');
       }
       const data = await res.json();
-      console.log('Fetched receipts for GM Dashboard:', data);
       setReceipts(data);
     } catch (error: any) {
       api.error({
@@ -85,26 +80,12 @@ export default function GMDashboardPage() {
     }
   };
 
-
-
-  if (loading || status === 'loading') {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
-
-  if (status === 'authenticated' && session?.user?.role !== 'GM') {
-    router.push(`/dashboard/${session.user.role.toLowerCase()}`);
-    return null;
-  }
-
   const columns: ColumnsType<Receipt> = [
     {
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
+      render: (text, record) => <Link href={`/receipts/${record.id}`}>{text}</Link>,
       sorter: (a, b) => a.title.localeCompare(b.title),
       filters: Array.from(new Set(receipts.map(r => r.title))).map(title => ({ text: title, value: title })),
       onFilter: (value, record) => record.title.indexOf(value as string) === 0,
@@ -115,23 +96,31 @@ export default function GMDashboardPage() {
       key: 'status',
       render: (status: string) => {
         let color = 'geekblue';
-        if (status === 'PENDING') {
+        if (status.includes('REJECTED')) {
           color = 'volcano';
-        } else if (status === 'APPROVED') {
+        } else if (status.includes('APPROVED')) {
           color = 'green';
-        } else if (status === 'REJECTED') {
-          color = 'red';
         }
-        return <Tag color={color}>{status.toUpperCase()}</Tag>;
+        return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
       },
+      filters: [
+        { text: 'Pending Manager Approval', value: 'PENDING_MANAGER_APPROVAL' },
+        { text: 'Approved by Manager (Pending DGM)', value: 'APPROVED_BY_MANAGER_PENDING_DGM' },
+        { text: 'Rejected by Manager', value: 'REJECTED_BY_MANAGER' },
+        { text: 'Pending DGM', value: 'PENDING_DGM' },
+        { text: 'Approved by DGM (Pending GM)', value: 'APPROVED_BY_DGM_PENDING_GM' },
+        { text: 'Rejected by DGM', value: 'REJECTED_BY_DGM' },
+        { text: 'Rejected by GM', value: 'REJECTED_BY_GM' },
+        { text: 'Approved Final', value: 'APPROVED_FINAL' },
+      ],
+      onFilter: (value, record) => record.status.indexOf(value as string) === 0,
     },
     {
-      title: 'Written By',
-      dataIndex: ['writtenBy', 'username'],
-      key: 'writtenBy',
-      filters: Array.from(new Set(receipts.map(r => r.writtenBy.username).filter(Boolean))).map(user => ({ text: user, value: user as string })),
-      onFilter: (value, record) => record.writtenBy.username.indexOf(value as string) === 0,
-      sorter: (a, b) => a.writtenBy.username.localeCompare(b.writtenBy.username),
+      title: 'Created At',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date: string) => new Date(date).toLocaleString(),
+      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     },
     {
       title: 'Created By HR',
@@ -143,22 +132,26 @@ export default function GMDashboardPage() {
       sorter: (a, b) => (a.createdBy?.username || '').localeCompare(b.createdBy?.username || ''),
     },
     {
-      title: 'DGM Action By',
-      dataIndex: 'dgmActionBy',
-      key: 'dgmActionBy',
-      filters: Array.from(new Set(receipts.map(r => r.dgmActionBy).filter(Boolean))).map(user => ({ text: user, value: user as string })),
-      onFilter: (value, record) => record.dgmActionBy?.indexOf(value as string) === 0,
+      title: 'Last Action By',
+      dataIndex: 'lastActionByRole',
+      key: 'lastActionByRole',
+      render: (text) => text || 'N/A',
+      filters: Array.from(new Set(receipts.map(r => r.lastActionByRole).filter(Boolean))).map(role => ({ text: role, value: role as string })),
+      onFilter: (value, record) => record.lastActionByRole?.indexOf(value as string) === 0,
+      sorter: (a, b) => (a.lastActionByRole || '').localeCompare(b.lastActionByRole || ''),
     },
     {
-      title: 'Created At',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleString(),
-      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      title: 'Rejection Reason',
+      dataIndex: 'rejectionReason',
+      key: 'rejectionReason',
+      render: (text) => text || 'N/A',
+      filters: Array.from(new Set(receipts.map(r => r.rejectionReason).filter(Boolean))).map(reason => ({ text: reason, value: reason as string })),
+      onFilter: (value, record) => record.rejectionReason?.indexOf(value as string) === 0,
+      sorter: (a, b) => (a.rejectionReason || '').localeCompare(b.rejectionReason || ''),
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: 'Action',
+      key: 'action',
       render: (_, record) => (
         <Space size="middle">
           <Link href={`/receipts/${record.id}`} passHref>
@@ -169,9 +162,17 @@ export default function GMDashboardPage() {
     },
   ];
 
+  if (loading || status === 'loading') {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
   return (
-    <div className="gm-dashboard-container" style={{ padding: '24px' }}>
-      <Title level={2}>GM Dashboard - Pending Receipts</Title>
+    <div className="requester-dashboard-container" style={{ padding: '24px' }}>
+      <Title level={2}>My Receipts</Title>
       <Table columns={columns} dataSource={receipts} rowKey="id" pagination={{ pageSize }} scroll={{ x: 'max-content' }} />
     </div>
   );

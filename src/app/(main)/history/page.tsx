@@ -26,6 +26,7 @@ interface Receipt {
     dgmActionBy?: string | null;
     gmActionBy?: string | null;
     managerActionBy?: string | null;
+    createdBy?: { username: string; role: string }; // Add createdBy
 }
 
 export default function ReceiptsHistoryPage() {
@@ -117,6 +118,9 @@ export default function ReceiptsHistoryPage() {
             dataIndex: 'title',
             key: 'title',
             render: (text, record) => <Link href={`/history/${record.id}`}>{text}</Link>,
+            sorter: (a, b) => a.title.localeCompare(b.title),
+            filters: Array.from(new Set(receipts.map(r => r.title))).map(title => ({ text: title, value: title })),
+            onFilter: (value, record) => record.title.indexOf(value as string) === 0,
         },
         {
             title: 'Status',
@@ -152,6 +156,16 @@ export default function ReceiptsHistoryPage() {
                 value: user as string
             })),
             onFilter: (value, record) => record.writtenBy.username.indexOf(value as string) === 0,
+            sorter: (a, b) => a.writtenBy.username.localeCompare(b.writtenBy.username),
+        },
+        {
+            title: 'Created By HR',
+            dataIndex: ['createdBy', 'username'],
+            key: 'createdBy',
+            render: (text) => text || 'N/A',
+            filters: Array.from(new Set(receipts.map(r => r.createdBy?.username).filter(Boolean))).map(user => ({ text: user, value: user as string })),
+            onFilter: (value, record) => record.createdBy?.username.indexOf(value as string) === 0,
+            sorter: (a, b) => (a.createdBy?.username || '').localeCompare(b.createdBy?.username || ''),
         },
         {
             title: 'DGM Action By',
@@ -162,6 +176,7 @@ export default function ReceiptsHistoryPage() {
                 value: user as string
             })),
             onFilter: (value, record) => record.dgmActionBy?.indexOf(value as string) === 0,
+            sorter: (a, b) => (a.dgmActionBy || '').localeCompare(b.dgmActionBy || ''),
         },
         {
             title: 'GM Action By',
@@ -172,6 +187,7 @@ export default function ReceiptsHistoryPage() {
                 value: user as string
             })),
             onFilter: (value, record) => record.gmActionBy?.indexOf(value as string) === 0,
+            sorter: (a, b) => (a.gmActionBy || '').localeCompare(b.gmActionBy || ''),
         },
         {
             title: 'Manager Action By',
@@ -182,6 +198,7 @@ export default function ReceiptsHistoryPage() {
                 value: user as string
             })),
             onFilter: (value, record) => record.managerActionBy?.indexOf(value as string) === 0,
+            sorter: (a, b) => (a.managerActionBy || '').localeCompare(b.managerActionBy || ''),
         },
         {
             title: 'Rejection Reason',
@@ -193,6 +210,7 @@ export default function ReceiptsHistoryPage() {
             })),
             onFilter: (value, record) => record.rejectionReason?.indexOf(value as string) === 0,
             render: (text) => text || 'N/A',
+            sorter: (a, b) => (a.rejectionReason || '').localeCompare(b.rejectionReason || ''),
         },
         {
             title: 'Created At',

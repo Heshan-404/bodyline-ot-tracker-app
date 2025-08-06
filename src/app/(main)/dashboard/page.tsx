@@ -24,6 +24,9 @@ export default function DashboardPage() {
         case 'SECURITY':
           router.push('/dashboard/security');
           break;
+        case 'REQUESTER':
+          router.push('/dashboard/requester');
+          break;
         default:
           router.push('/login'); // Fallback or error page
           break;
