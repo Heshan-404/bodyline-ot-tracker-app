@@ -111,9 +111,9 @@ export default function CreateReceiptPage() {
   };
 
   return (
-    <div className="create-receipt-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+    <div className="create-receipt-container">
       <Card className="create-receipt-card" style={{ width: 800 }}>
-        <Title level={2} style={{ textAlign: 'center' }}>Create New Receipt</Title>
+        <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Create New Receipt</Title>
         <Form
           form={form}
           layout="vertical"

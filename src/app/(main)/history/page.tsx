@@ -2,7 +2,7 @@
 
 import {useEffect, useState, useCallback} from 'react';
 import {useSession} from 'next-auth/react';
-import {Table, Tag, Spin, Typography, Button, Space} from 'antd';
+import {Table, Tag, Typography, Button, Space, Empty} from 'antd';
 import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type {ColumnsType} from 'antd/es/table';
 import Link from 'next/link';
@@ -138,11 +138,13 @@ export default function ReceiptsHistoryPage() {
             ],
             onFilter: (value, record) => record.status.indexOf(value as string) === 0,
             render: (status: string) => {
-                let color = 'geekblue';
+                let color = '#ee232b'; // Default to primary red
                 if (status.includes('REJECTED')) {
-                    color = 'volcano';
+                    color = '#ee232b'; // Red for rejected
                 } else if (status.includes('APPROVED')) {
-                    color = 'green';
+                    color = '#52c41a'; // Green for approved
+                } else {
+                    color = '#faad14'; // Orange for pending/other statuses
                 }
                 return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
             },
@@ -252,8 +254,16 @@ export default function ReceiptsHistoryPage() {
 
     if (loading || status === 'loading') {
         return (
-            <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh'}}>
-                <Spin size="large"/>
+            <div style={{ padding: '24px' }}>
+                <Title level={2} style={{ marginBottom: '24px' }}>Receipts History</Title>
+                <Table
+                    columns={columns}
+                    dataSource={[]}
+                    loading={true}
+                    rowKey="id"
+                    pagination={false}
+                    scroll={{ x: 'max-content' }}
+                />
             </div>
         );
     }
@@ -262,9 +272,11 @@ export default function ReceiptsHistoryPage() {
 
     return (
         <div className="receipts-history-container">
-            <Title level={2}>Receipts History</Title>
+            <Title level={2} style={{ marginBottom: '24px' }}>Receipts History</Title>
             <Table columns={session?.user.role === 'HR' ? hrColumns : columns} dataSource={receipts} rowKey="id"
-                   pagination={{pageSize}} scroll={{x: 'max-content'}}/>
+                   pagination={{pageSize}} scroll={{x: 'max-content'}}
+                   locale={{ emptyText: <Empty description="No history found." /> }}
+            />
         </div>
     );
 }

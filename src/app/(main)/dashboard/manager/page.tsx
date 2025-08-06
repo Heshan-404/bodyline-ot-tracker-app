@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { Table, Tag, Spin, Typography, Button, Space } from 'antd';
+import { Table, Tag, Typography, Button, Space, Empty } from 'antd';
 import { useNotification } from '@/src/components/notification/NotificationProvider';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
@@ -113,11 +113,13 @@ export default function ManagerDashboardPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
-        let color = 'geekblue';
+        let color = '#ee232b'; // Default to primary red
         if (status.includes('REJECTED')) {
-          color = 'volcano';
+          color = '#ee232b'; // Red for rejected
         } else if (status.includes('APPROVED')) {
-          color = 'green';
+          color = '#52c41a'; // Green for approved
+        } else {
+          color = '#faad14'; // Orange for pending/other statuses
         }
         return <Tag color={color}>{status.replace(/_/g, ' ')}</Tag>;
       },
@@ -168,8 +170,16 @@ export default function ManagerDashboardPage() {
 
   if (loading || status === 'loading') {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-        <Spin size="large" />
+      <div style={{ padding: '24px' }}>
+        <Title level={2} style={{ marginBottom: '24px' }}>Manager Dashboard - Pending Receipts</Title>
+        <Table
+          columns={columns}
+          dataSource={[]}
+          loading={true}
+          rowKey="id"
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+        />
       </div>
     );
   }
@@ -182,8 +192,15 @@ export default function ManagerDashboardPage() {
   return (
     <div className="manager-dashboard-container" style={{ padding: '24px' }}>
       
-      <Title level={2}>Manager Dashboard - Pending Receipts</Title>
-      <Table columns={columns} dataSource={receipts} rowKey="id" pagination={{ pageSize }} scroll={{ x: 'max-content' }} />
+      <Title level={2} style={{ marginBottom: '24px' }}>Manager Dashboard - Pending Receipts</Title>
+      <Table
+        columns={columns}
+        dataSource={receipts}
+        rowKey="id"
+        pagination={{ pageSize }}
+        scroll={{ x: 'max-content' }}
+        locale={{ emptyText: <Empty description="No pending receipts for Manager." /> }}
+      />
     </div>
   );
 }

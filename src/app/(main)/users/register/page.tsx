@@ -82,8 +82,7 @@ export default function RegisterUserPage() {
   };
 
   return (
-    <div className="register-user-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
-      
+    <div className="register-user-container">
       <Card className="register-user-card" style={{ width: 500 }}>
         <Title level={2}>Register New User</Title>
         <Form

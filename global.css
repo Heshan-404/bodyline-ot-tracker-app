@@ -1,94 +1,99 @@
-body{
+* {
     margin: 0;
     padding: 0;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
+html, body {
+    height: 100%;
+    background-color: #ffffff; /* White background for the whole app */
+    color: #000000; /* Default text color to black */
+}
+
+/* General Card Styling */
+.ant-card {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* Subtle shadow for lifted effect */
+    border: none; /* Remove default border */
+}
+
+/* Main Content Area Padding */
+.main-content {
+    padding: 24px; /* Consistent padding for desktop */
+}
+
+/* Responsive Adjustments */
 @media (max-width: 768px) {
-  .main-content {
-    padding: 16px !important; /* Consistent padding for all main content */
-  }
+    .main-content {
+        padding: 16px; /* Consistent padding for mobile */
+    }
 
-  /* General Ant Design component top spacing removal - keep these as they are about margin-top/padding-top */
-  .main-content > .ant-card,
-  .main-content > .ant-form,
-  .main-content > .ant-table-wrapper,
-  .main-content > .ant-typography {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
-  }
+    /* Remove top margins/paddings for elements directly under main-content on mobile */
+    .main-content > .ant-card,
+    .main-content > .ant-form,
+    .main-content > .ant-table-wrapper,
+    .main-content > .ant-typography {
+        margin-top: 0;
+        padding-top: 0;
+    }
 
-  .ant-typography.ant-typography-h2 {
-    margin-top: 0 !important;
-  }
+    .ant-typography.ant-typography-h2 {
+        margin-top: 0;
+    }
 
-  .receipt-detail-container {
-    margin: 0 !important;
-  }
+    /* Specific container adjustments for mobile */
+    .receipt-detail-container,
+    .gm-dashboard-container,
+    .hr-dashboard-container,
+    .profile-container,
+    .create-receipt-container,
+    .manage-users-container,
+    .register-user-container {
+        margin: 0;
+    }
 
-  .receipt-detail-card .ant-card-body {
-    padding: 16px !important; /* Keep some padding inside the card body */
-  }
+    /* Card body padding for mobile */
+    .receipt-detail-card .ant-card-body,
+    .profile-card .ant-card-body,
+    .create-receipt-card .ant-card-body,
+    .register-user-card .ant-card-body {
+        padding: 16px;
+    }
 
-  .receipt-descriptions .ant-descriptions-view {
-    /* Removed padding: 0 !important; */
-  }
+    .receipt-actions {
+        margin: 0;
+    }
 
-  .receipt-actions {
-    margin: 0 !important;
-  }
-
-  .gm-dashboard-container {
-    margin: 0 !important;
-  }
-
-  .hr-dashboard-container {
-    margin: 0 !important;
-  }
-
-  .profile-container {
-    margin: 0 !important;
-  }
-
-  .profile-card .ant-card-body {
-    padding: 16px !important; /* Keep some padding inside the card body */
-  }
-
-  .create-receipt-container {
-    margin: 0 !important;
-  }
-
-  .create-receipt-card .ant-card-body {
-    padding: 16px !important; /* Keep some padding inside the card body */
-  }
-
-  .receipts-history-container {
-    /* Removed padding: 8px !important; - will be covered by .main-content */
-  }
-
-  .manage-users-container {
-    margin: 0 !important;
-  }
-
-  .register-user-container {
-    margin: 0 !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    min-height: 100vh !important;
-    background: #f0f2f5 !important;
-  }
-
-  .register-user-card .ant-card-body {
-    padding: 16px !important; /* Keep some padding inside the card body */
-  }
-}
-
-/* Desktop padding for history container */
-.receipts-history-container {
-  padding: 24px;
+    .register-user-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: #ffffff; /* Use white for background */
+    }
 }
 
 /* Desktop width for profile card */
 .profile-card {
-  width: 400px;
+    width: 400px;
+}
+
+/* Ensure full height for login/register pages */
+.login-page-container,
+.register-user-container {
+    padding: 0;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffffff; /* Use white for background */
+}
+
+/* Center card within its container */
+.login-card,
+.register-user-card,
+.profile-card,
+.create-receipt-card {
+    margin: 0 auto;
 }
